@@ -1,0 +1,195 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 255 100% 100%; /* White */
+    --foreground: 0 0% 0%; /* Black */
+    --card: 255 100% 100%;
+    --card-foreground: 0 0% 0%;
+    --popover: 255 100% 100%;
+    --popover-foreground: 0 0% 0%;
+    --primary: 0 0% 0%; /* Black for primary elements */
+    --primary-foreground: 255 100% 100%; /* White for text on primary */
+    --secondary: 0 0% 90%; /* Light gray for secondary elements */
+    --secondary-foreground: 0 0% 0%; /* Black for text on secondary */
+    --muted: 0 0% 96%; /* Light beige/gray for muted backgrounds */
+    --muted-foreground: 0 0% 40%;
+    --accent: 30 20% 90%; /* Light beige for accents */
+    --accent-foreground: 25 15% 25%; /* Darker brown for text on accent */
+    --destructive: 0 100% 50%;
+    --destructive-foreground: 255 100% 100%;
+    --border: 0 0% 85%;
+    --input: 0 0% 85%;
+    --ring: 0 0% 0%;
+    --radius: 0rem; /* No rounded corners globally */
+
+    --brand-brown-light: 30 30% 85%; /* Light, desaturated brown/beige */
+    --brand-brown-medium: 25 25% 65%; /* Medium, desaturated brown */
+    --brand-brown-dark: 20 30% 30%; /* Dark, desaturated brown */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+    /* Example of using a subtle brown for background if desired */
+    /* @apply bg-[hsl(var(--brand-brown-light))] text-[hsl(var(--brand-brown-dark))]; */
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-foreground;
+     /* @apply text-[hsl(var(--brand-brown-dark))]; */
+  }
+}
+
+.whatsapp-float {
+  position: fixed;
+  width: 50px;
+  height: 50px;
+  bottom: 30px;
+  right: 30px;
+  background-color: #25D366; /* WhatsApp Green */
+  color: #FFF;
+  border-radius: 25px; /* Slightly less rounded */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.whatsapp-float:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.product-card {
+  background: var(--background);
+  border: 1px solid var(--border);
+  transition: all 0.3s ease;
+}
+
+.product-card:hover {
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05); /* Softer shadow */
+  transform: translateY(-3px);
+}
+
+.category-card {
+  transition: all 0.3s ease;
+  background: var(--background);
+  border: 1px solid var(--border);
+}
+
+.category-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.05); /* Softer shadow */
+}
+
+/* Custom scrollbar for a more subtle look */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--secondary-foreground));
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary));
+}
+
+.nav-link-underline {
+  position: absolute;
+  bottom: -3px; /* Adjusted for thinner underline */
+  left: 0;
+  width: 100%;
+  height: 1px; /* Thinner underline */
+  background-color: black;
+  transform: scaleX(0);
+  transition: transform 0.2s ease-out; /* No animation, direct transition */
+}
+
+.group:hover .nav-link-underline,
+.nav-link-active .nav-link-underline {
+  transform: scaleX(1);
+}
+
+.mobile-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 45; /* Below mobile menu, above content */
+}
+
+/*Ruptura de las imagenes de las reviews*/
+@media (min-width: 400px) {
+  .reviews-row-layout {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+}
+/* ReviewsList.css */
+
+.image-grid-4,
+.image-grid-3,
+.image-grid-2,
+.image-grid-1 {
+  display: grid;
+  gap: 0.5rem;
+  justify-content: end;
+}
+
+.image-grid-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.image-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.image-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.image-grid-1 {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.image-container {
+  position: relative;
+  width: 100%;
+  max-width: 120px;
+  aspect-ratio: 1 / 1;
+}
+
+.review-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 0.375rem;
+  border: 1px solid #d1d5db; /* Tailwind border-gray-300 */
+  cursor: pointer;
+}
+
+.image-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 0.375rem;
+  cursor: pointer;
+}
