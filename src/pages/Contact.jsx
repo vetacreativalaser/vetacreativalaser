@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -29,7 +28,7 @@ const Contact = () => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const response = await fetch('/api/send-email', {
+      const response = await fetch('https://dspsrnprvrpjrkicxiso.supabase.co/functions/v1/send-email-contact', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -84,7 +83,7 @@ const Contact = () => {
     {
       icon: <Clock className="h-5 w-5" strokeWidth={1.5}/>,
       title: 'Horario',
-      info: 'Lun - Vie: 9:00 - 18:00',
+      info: 'Lun - Vie: 16:00 - 20:00',
     }
   ];
 
@@ -97,9 +96,7 @@ const Contact = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl font-semibold text-black mb-3">
-            Contáctanos
-          </h1>
+          <h1 className="text-4xl font-semibold text-black mb-3">Contáctanos</h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             ¿Tienes una idea creativa o necesitas un producto personalizado? Estamos aquí para ayudarte.
           </p>
@@ -112,9 +109,7 @@ const Contact = () => {
             transition={{ duration: 0.7 }}
             className="bg-white p-8 border border-gray-200"
           >
-            <h2 className="text-2xl font-semibold text-black mb-6">
-              Envíanos un Mensaje
-            </h2>
+            <h2 className="text-2xl font-semibold text-black mb-6">Envíanos un Mensaje</h2>
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
@@ -149,15 +144,11 @@ const Contact = () => {
             className="space-y-8"
           >
             <div className="bg-gray-50 p-8 border border-gray-200">
-              <h2 className="text-2xl font-semibold text-black mb-6">
-                Información de Contacto
-              </h2>
+              <h2 className="text-2xl font-semibold text-black mb-6">Información de Contacto</h2>
               <div className="space-y-5">
                 {contactInfo.map((item, index) => (
                   <div key={index} className="flex items-start space-x-3">
-                    <div className="flex-shrink-0 text-black mt-1">
-                      {item.icon}
-                    </div>
+                    <div className="flex-shrink-0 text-black mt-1">{item.icon}</div>
                     <div>
                       <h3 className="font-semibold text-black">{item.title}</h3>
                       <p className="text-gray-600 text-sm">{item.info}</p>
@@ -166,30 +157,20 @@ const Contact = () => {
                 ))}
               </div>
             </div>
-            
+
             <div className="bg-green-50 p-6 border border-green-200 text-center">
-                <MessageSquare className="h-8 w-8 text-green-600 mx-auto mb-3" strokeWidth={1.5} />
-                <h3 className="text-lg font-semibold text-green-800 mb-2">
-                    ¿Prefieres WhatsApp?
-                </h3>
-                <p className="text-green-700 text-sm mb-4">
-                    Contacta directamente para una respuesta más rápida y personalizada.
-                </p>
-                <Button 
-                  onClick={handleWhatsAppClick}
-                  variant="outline"
-                  className="border-green-600 text-green-600 hover:bg-green-600 hover:text-white"
-                >
-                  Chatear por WhatsApp
-                </Button>
+              <MessageSquare className="h-8 w-8 text-green-600 mx-auto mb-3" strokeWidth={1.5} />
+              <h3 className="text-lg font-semibold text-green-800 mb-2">¿Prefieres WhatsApp?</h3>
+              <p className="text-green-700 text-sm mb-4">Contacta directamente para una respuesta más rápida y personalizada.</p>
+              <Button 
+                onClick={handleWhatsAppClick}
+                variant="outline"
+                className="border-green-600 text-green-600 hover:bg-green-600 hover:text-white"
+              >
+                Chatear por WhatsApp
+              </Button>
             </div>
 
-            <div className="aspect-video bg-gray-100 border border-gray-200">
-                <img 
-                    className="w-full h-full object-cover"
-                    alt="Mapa de ubicación de Veta Creativa Laser"
-                 src="https://images.unsplash.com/photo-1621273961349-0612be84b10a" />
-            </div>
           </motion.div>
         </div>
       </div>

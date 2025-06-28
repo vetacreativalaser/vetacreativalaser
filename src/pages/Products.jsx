@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -97,7 +96,9 @@ const Products = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
           className="text-center mb-12"
         >
           <h1 className="text-4xl font-semibold mb-2">PRODUCTOS</h1>
@@ -110,17 +111,25 @@ const Products = () => {
           {products.map((product, index) => (
             <motion.div
               key={product.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className="group relative"
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ delay: index * 0.05, duration: 0.4, ease: 'easeOut' }}
+              className="group relative hover:shadow-lg hover:scale-[1.015] transition-transform"
             >
               <div className="relative w-full aspect-square bg-gray-100 overflow-hidden">
                 <Link to={`/productos/${product.id}`}>
                   <img 
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    alt={product.image_alts && product.image_alts.length > 0 ? product.image_alts[0] : product.name}
-                    src={(product.image_urls && product.image_urls.length > 0) ? product.image_urls[0] : "https://images.unsplash.com/photo-1635865165118-917ed9e20936"}
+                    alt={product.image_alts?.[0] || product.name}
+                    src={(() => {
+                      try {
+                        const urls = typeof product.image_urls === 'string' ? JSON.parse(product.image_urls) : product.image_urls;
+                        return Array.isArray(urls) && urls.length > 0 ? urls[0] : '';
+                      } catch {
+                        return '';
+                      }
+                    })()}
                   />
                 </Link>
                 {user && (
@@ -131,29 +140,35 @@ const Products = () => {
                     onClick={() => toggleFavorite(product.id)}
                     disabled={isLoadingFavorites}
                   >
-                    {isLoadingFavorites && favorites.includes(product.id) ? <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-500"></div> : <Heart className={`h-4 w-4 ${favorites.includes(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} strokeWidth={1.5} />}
+                    {isLoadingFavorites && favorites.includes(product.id)
+                      ? <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-500"></div>
+                      : <Heart className={`h-4 w-4 ${favorites.includes(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} strokeWidth={1.5} />}
                   </Button>
                 )}
               </div>
-              <div className="mt-3 text-center">
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }} 
+                whileInView={{ opacity: 1, y: 0 }} 
+                transition={{ delay: index * 0.05 + 0.1, duration: 0.4, ease: 'easeOut' }}
+                className="mt-3 text-center py-2 px-1 rounded group-hover:bg-gray-100 transition-colors"
+              >
                 <h3 className="text-md font-medium text-black">
                   <Link to={`/productos/${product.id}`}>
                     {product.name}
                   </Link>
                 </h3>
-              <p className="mt-1 text-sm text-gray-500">
-                {(() => {
-                  try {
-                    const parsedPrice = typeof product.price === 'string' ? JSON.parse(product.price) : product.price;
-                    if (parsedPrice?.type === 'fixed') return `${parsedPrice.value || parsedPrice.fixedPrice} €`;
-                    return 'variable €';
-                  } catch (error) {
-                    return 'variable €';
-                  }
-                })()}
-              </p>
-
-      </div>
+                <p className="mt-1 text-sm text-gray-500">
+                  {(() => {
+                    try {
+                      const parsedPrice = typeof product.price === 'string' ? JSON.parse(product.price) : product.price;
+                      if (parsedPrice?.type === 'fixed') return `${parsedPrice.value || parsedPrice.fixedPrice} €`;
+                      return 'variable €';
+                    } catch (error) {
+                      return 'variable €';
+                    }
+                  })()}
+                </p>
+              </motion.div>
             </motion.div>
           ))}
         </div>

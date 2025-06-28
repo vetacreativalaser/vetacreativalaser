@@ -63,7 +63,7 @@ const CookiePolicy = () => {
               Podemos actualizar nuestra Política de Cookies de vez en cuando. Te notificaremos cualquier cambio publicando la nueva Política de Cookies en esta página.
             </p>
             <p className="text-gray-600 leading-relaxed mt-4">
-              Última actualización: {new Date().toLocaleDateString()}
+              Última actualización: 27/6/2025
             </p>
           </section>
         </motion.div>

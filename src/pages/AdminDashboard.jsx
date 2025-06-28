@@ -36,12 +36,12 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from '@/components/ui/label';
 import { getProductPopularity } from '../utils/getProductPopularity'; // ajusta la ruta si cambia
-import CreateCategoryForm from './admin/CreateCategoryForm';
+import CreateCategoryDialog from '@/components/product/CreateCategoryDialog';
+import EditCategoryDialog from '@/components/product/EditCategoryDialog';
 
 const AdminDashboard = () => {
 
   //Declaración de constantes
-
   const [users, setUsers] = useState([]);
   const [products, setProducts] = useState([]);
   const [purchases, setPurchases] = useState([]);
@@ -61,15 +61,17 @@ const AdminDashboard = () => {
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const openCategoryModal = () => setIsCategoryModalOpen(true);
   const closeCategoryModal = () => setIsCategoryModalOpen(false);
+  const [categories, setCategories] = useState([]);
+  const [editingCategory, setEditingCategory] = useState(null);
 
-useEffect(() => {
-  const fetchPopularity = async () => {
-    const data = await getProductPopularity();
-    setPopularProducts(data);
-  };
+  useEffect(() => {
+    const fetchPopularity = async () => {
+      const data = await getProductPopularity();
+      setPopularProducts(data);
+    };
+    fetchPopularity();
+  }, []);
 
-  fetchPopularity();
-}, []);
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const tabParam = urlParams.get('tab');
@@ -80,14 +82,13 @@ useEffect(() => {
   }, []);
 
   //Funciones
-
   const fetchAdminData = async () => {
     setIsLoading(true);
 
-    // 1) Trae todos los perfiles SIN single ni limit
+    // 1) Perfiles con puntos
     const { data: profilesData, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, name, email, phone, purchase_count');
+      .select('id, name, email, phone, purchase_count, points');
     if (profilesError) {
       console.error(profilesError);
       toast({ title: 'Error', description: 'No se pudieron cargar los perfiles.', variant: 'destructive' });
@@ -95,47 +96,89 @@ useEffect(() => {
       return;
     }
 
-    // 2) Trae todos los favoritos
+    // 2) Favoritos con productos
     const { data: favData, error: favError } = await supabase
       .from('favorites')
-      .select('user_id');
+      .select('user_id, product_id, products(name)');
+
     if (favError) {
       console.error(favError);
       setIsLoading(false);
       return;
     }
 
-    // 3) Cuenta favoritos por user_id
-    const favCountMap = favData.reduce((acc, { user_id }) => {
-      acc[user_id] = (acc[user_id] || 0) + 1;
-      return acc;
-    }, {});
+    // 3) Categorías
+    const { data: categoriesData, error: categoriesError } = await supabase
+      .from('categorias')
+      .select('*')
+      .order('fijada', { ascending: false })
+      .order('created_at', { ascending: false });
 
-    // 4) Mapea perfiles añadiendo favorites_count
+    if (categoriesError) {
+      console.error(categoriesError);
+      toast({ title: 'Error', description: 'No se pudieron cargar las categorías.', variant: 'destructive' });
+    } else {
+      setCategories(categoriesData);
+    }
+
+    // 4) Construir mapa de favoritos por usuario
+    const favMap = {};
+    favData.forEach(fav => {
+      if (!favMap[fav.user_id]) favMap[fav.user_id] = [];
+      favMap[fav.user_id].push({ id: fav.product_id, name: fav.products?.name || 'Sin nombre' });
+    });
+
+    // 5) Mezclar todo en users
     const usersWithDetails = profilesData.map(profile => ({
       ...profile,
-      favorites_count: favCountMap[profile.id] || 0,
+      favorites_list: favMap[profile.id] || [],
+      favorites_count: (favMap[profile.id] || []).length,
     }));
 
-    // 5) ¡Un único setUsers con todo el array!
     setUsers(usersWithDetails);
 
-    // 6) El resto de fetches (productos, compras, reseñas)...
+    // 6) Productos, compras y reseñas
     const [{ data: productsData }, { data: purchasesData }, { data: reviewsData }] = await Promise.all([
       supabase.from('products').select(`*,categorias (categoria)`).order('created_at', { ascending: false }),
       supabase.from('purchases').select('*').order('created_at', { ascending: false }),
       supabase.from('reviews').select('*').order('created_at', { ascending: false }),
-      
     ]);
- 
 
     setProducts(productsData || []);
     setPurchases(purchasesData || []);
     setReviews(reviewsData || []);
-
     setIsLoading(false);
   };
+
+  const exportUsersCSV = () => {
+    const csvContent = [
+      ['Nombre', 'Email', 'Teléfono', 'Puntos', 'Compras', 'Favoritos'],
+      ...users.map(u => [
+        u.name,
+        u.email,
+        u.phone,
+        u.points ?? 0,
+        u.purchase_count ?? 0,
+        u.favorites_list.map(f => `${f.name} (${f.id})`).join(' | ')
+      ])
+    ]
+    .map(row => row.map(value => `"${value}"`).join(','))
+    .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'usuarios.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+ 
+
   
+ 
   //Filtros
 
   const filteredUsers = users.filter(user =>
@@ -211,6 +254,7 @@ useEffect(() => {
   }
   setIsLoading(false);
   };
+
   const handleDeletePurchase = async (purchaseId) => {
     setIsLoading(true);
     const { error } = await supabase
@@ -286,6 +330,42 @@ useEffect(() => {
     setIsLoading(false);
   };
 
+  //Categorias
+const handleEditCategory = (cat) => {
+  setEditingCategory(cat);
+};
+
+const handleToggleVisible = async (cat) => {
+  const newVisible = !cat.visible;
+  const { error } = await supabase.from('categorias').update({ visible: newVisible }).eq('id', cat.id);
+  if (!error) {
+    await supabase.from('products').update({ visible: newVisible }).eq('category_id', cat.id);
+    fetchAdminData();
+    toast({ title: "Categoría actualizada", description: `Ahora está ${newVisible ? 'visible' : 'oculta'}.` });
+  }
+};
+
+const handleTogglePinned = async (cat) => {
+  const newFijada = !cat.fijada;
+  const { error } = await supabase.from('categorias').update({ fijada: newFijada }).eq('id', cat.id);
+  if (!error) {
+    fetchAdminData();
+    toast({ title: "Prioridad actualizada", description: newFijada ? 'Categoría fijada' : 'Categoría desfijada' });
+  }
+};
+
+const handleDeleteCategory = async (categoryId) => {
+  setIsLoading(true);
+  const { error } = await supabase.from('categorias').delete().eq('id', categoryId);
+  if (error) {
+    toast({ title: "Error al eliminar categoría", description: error.message, variant: "destructive" });
+  } else {
+    setCategories(prev => prev.filter(c => c.id !== categoryId));
+    toast({ title: "Categoría Eliminada" });
+  }
+  setIsLoading(false);
+};
+
   //Condiciones importantes
 
   if (isLoading && users.length === 0 && products.length === 0 && purchases.length === 0 && reviews.length === 0) { 
@@ -325,16 +405,18 @@ useEffect(() => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-            <TabsList className="grid grid-cols-1 sm:grid-cols-5 gap-2 p-2 rounded sm:bg-gray-200">
+            <TabsList className="grid grid-cols-1 sm:grid-cols-6 gap-2 p-2 rounded sm:bg-gray-200">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="users">Usuarios</TabsTrigger>
             <TabsTrigger value="products">Productos</TabsTrigger>
+              <TabsTrigger value="categories">Categorías</TabsTrigger>
+
             <TabsTrigger value="purchases">Compras</TabsTrigger>
             <TabsTrigger value="reviews">Reseñas</TabsTrigger>
           </TabsList>
 
 
-          <div className="mt-[180px] sm:mt-2 flex flex-col gap-6 sm:gap-2 px-4">
+          <div className="mt-[200px] sm:mt-2 flex flex-col gap-6 sm:gap-2 px-4">
             <TabsContent value="dashboard">
                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 <motion.div 
@@ -402,7 +484,13 @@ useEffect(() => {
                   initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                   className="bg-white p-6 shadow border border-gray-200 mb-8"
               >
-                <h2 className="text-2xl font-semibold text-black mb-6">Gestión de Usuarios</h2>
+                <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
+                  <h2 className="text-2xl font-semibold text-black mb-2 sm:mb-0">Gestión de Usuarios</h2>
+                  <Button size="sm" onClick={exportUsersCSV} className="bg-green-600 text-white hover:bg-green-700">Exportar CSV</Button>
+                </div>
+
+               
+
                 <div className="mb-4 flex">
                   <Input
                     type="search"
@@ -412,6 +500,8 @@ useEffect(() => {
                     className="max-w-sm mr-2 border-gray-300 focus:border-black focus:ring-black"
                   />
                 </div>
+       
+
 
                 {isLoading && filteredUsers.length === 0 ? <div className="flex justify-center py-4"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div></div> :
                   <div className="overflow-x-auto">
@@ -422,7 +512,8 @@ useEffect(() => {
                           <th scope="col" className="px-6 py-3">Email</th>
                           <th scope="col" className="px-6 py-3">Teléfono</th>
                           <th scope="col" className="px-6 py-3">Nº Compras</th>
-                          <th scope="col" className="px-6 py-3">Nº Favoritos</th>
+                          <th scope="col" className="px-6 py-3">Favoritos</th>
+                          <th scope="col" className="px-6 py-3">Puntos</th>
                           <th scope="col" className="px-6 py-3">Acciones</th>
                         </tr>
                       </thead>
@@ -433,7 +524,17 @@ useEffect(() => {
                             <td className="px-6 py-4">{user.email}</td>
                             <td className="px-6 py-4">{user.phone || '-'}</td>
                             <td className="px-6 py-4">{user.purchase_count || 0}</td>
-                            <td className="px-6 py-4">{user.favorites_count || 0}</td>
+                           <td className="px-6 py-4">
+                              {user.favorites_list.length === 0 ? '—' : (
+                                <ul className="list-disc list-inside text-xs text-gray-700">
+                                  {user.favorites_list.map(f => (
+                                    <li key={f.id}>{f.name} ({f.id})</li>
+                                  ))}
+                                </ul>
+                              )}
+                            </td>
+
+                            <td className="px-6 py-4">{user.points ?? 0}</td>
                             <td className="px-6 py-4">
                               <Button variant="outline" size="sm" onClick={() => openPurchaseDialog(user)} className="text-xs text-blue-600 border-blue-600 hover:bg-blue-100" disabled={isLoading}>
                                 <PlusCircle className="h-3 w-3 mr-1"/> Añadir Compra
@@ -700,6 +801,59 @@ useEffect(() => {
                 }
               </motion.div>
             </TabsContent>
+            <TabsContent value="categories">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white p-6 shadow border border-gray-200 mb-8"
+              >
+                <h2 className="text-2xl font-semibold text-black mb-6">Gestión de Categorías</h2>
+
+                {categories.length === 0 ? (
+                  <p className="text-gray-500">No hay categorías.</p>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {categories.map((cat) => (
+                      <div key={cat.id} className="border p-4 bg-white shadow-sm rounded">
+                        <img src={cat.image_url} alt={cat.title} className="w-full h-40 object-cover rounded mb-2" />
+                        <h3 className="text-lg font-semibold">{cat.title}</h3>
+                        <p className="text-sm text-gray-600 mb-3">{cat.description}</p>
+
+                        <div className="flex gap-2 flex-wrap">
+                          <Button size="sm" onClick={() => handleEditCategory(cat)}>Editar</Button>
+                          <Button size="sm" variant="outline" onClick={() => handleToggleVisible(cat)}>{cat.visible ? 'Ocultar' : 'Mostrar'}</Button>
+                          <Button size="sm" variant="outline" onClick={() => handleTogglePinned(cat)}>{cat.fijada ? 'Desfijar' : 'Fijar'}</Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="sm" variant="destructive">Eliminar</Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>¿Eliminar categoría?</AlertDialogTitle>
+                                <AlertDialogDescription>Esto la eliminará permanentemente.</AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteCategory(cat.id)}>Eliminar</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+
+              <EditCategoryDialog
+                isOpen={!!editingCategory}
+                setIsOpen={() => setEditingCategory(null)}
+                category={editingCategory}
+                onSuccess={() => fetchAdminData()}
+              />
+            </TabsContent>
+
+
           </div>
         </Tabs>
       </motion.div>
@@ -802,15 +956,13 @@ useEffect(() => {
       </Dialog>
       <Dialog open={isCategoryModalOpen} onOpenChange={setIsCategoryModalOpen}>
         <DialogContent>
-          <DialogHeader>
-                <DialogTitle>Crear Nueva Categoría</DialogTitle>
-          </DialogHeader>
-
-          {/* Ahora solo inyectas el form limpio */}
-          <CreateCategoryForm onSuccess={(newCat) => {
-            setIsCategoryModalOpen(false);
-            if (newCat) setCategories(prev => [...prev, newCat]);
-          }} />
+          <CreateCategoryDialog
+  isOpen={isCategoryModalOpen}
+  setIsOpen={setIsCategoryModalOpen}
+  onSuccess={(newCat) => {
+    setCategories(prev => [...prev, newCat]);
+  }}
+/>
         </DialogContent>
      </Dialog>
     </div>

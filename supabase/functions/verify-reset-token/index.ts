@@ -1,10 +1,19 @@
+// @ts-ignore
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
+// @ts-ignore
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js';
+// @ts-ignore
+
+import { Resend } from 'https://esm.sh/resend';
 
 const supabase = createClient(
+  // @ts-ignore
   Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  // @ts-ignore
+  Deno.env.get('SUPABASE_ANON_KEY')!
 );
+// @ts-ignore
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {

@@ -12,7 +12,7 @@ import {
 const faqData = [
   {
     question: "¿Cuánto tiempo tarda un pedido personalizado?",
-    answer: "Los pedidos personalizados suelen tardar entre 3 y 7 días laborables en producirse, dependiendo de la complejidad del diseño y nuestra carga de trabajo actual. Te informaremos del plazo estimado al confirmar tu pedido."
+    answer: "Los pedidos personalizados suelen tardar entre 7 y 21 días laborables en producirse, dependiendo de la complejidad del diseño y nuestra carga de trabajo actual. Te informaremos del plazo estimado antes de confirmar tu pedido. En caso de retraso con la fecha de entrega por culpa de nuestra empresa se le realizará un descuento superior por las molestias, o incluso retorno total del dinero. De nuestra empresa excluye que la empresa de paquetería tarde más de lo esperado en enviar su paquete. Para mayor rapidez le recomendamos pedir en épocas de fiesta o fines de semana, recuerda que tengo 15 años y entre semana estudio, por lo que la disponibilidad es menor."
   },
   {
     question: "¿Qué tipos de madera utilizan?",

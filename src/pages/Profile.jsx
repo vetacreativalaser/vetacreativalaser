@@ -2,14 +2,14 @@ import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Trash2, User, ShoppingBag, LayoutDashboard, Edit3, Save, Lock, Mail, Star, Info } from 'lucide-react';
+import { Trash2, User, ShoppingBag, LayoutDashboard, Edit3, Save, Lock, Mail, Star, Info, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog } from '@/components/ui/dialog';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Pagination } from 'swiper/modules';
+import { Navigation, Pagination } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/pagination';
 
@@ -161,35 +161,35 @@ const Profile = () => {
     setAllSlides(slides);
   }, [reviews]);
  useEffect(() => {
-    const fetchEmails = async () => {
-      const uniqueIds = [...new Set(reviews.map((r) => r.user_id))];
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, email, name')
-        .in('id', uniqueIds);
+  const fetchEmails = async () => {
+    const uniqueIds = [...new Set(reviews.map((r) => r.user_id))];
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, email, name')
+      .in('id', uniqueIds);
 
-      if (!error && data) {
-        const emailMap = {};
-        data.forEach((u) => {
-          emailMap[u.id] = { email: u.email, name: u.name };
-        });
-        setUserEmails(emailMap);
-      }
-    };
+    if (!error && data) {
+      const emailMap = {};
+      data.forEach((u) => {
+        emailMap[u.id] = { email: u.email, name: u.name };
+      });
+      // FALTA: setUserEmails(emailMap)
+    }
+  };
 
-    const slides = [];
-    reviews.forEach((review) => {
-      const imageUrls = typeof review.image_urls === 'string' ? JSON.parse(review.image_urls) : review.image_urls;
-      if (Array.isArray(imageUrls)) {
-        imageUrls.forEach((url) => {
-          slides.push({ url, review });
-        });
-      }
-    });
-    setAllSlides(slides);
+  const slides = [];
+  reviews.forEach((review) => {
+    const imageUrls = typeof review.image_urls === 'string' ? JSON.parse(review.image_urls) : review.image_urls;
+    if (Array.isArray(imageUrls)) {
+      imageUrls.forEach((url) => {
+        slides.push({ url, review });
+      });
+    }
+  });
+  setAllSlides(slides);
 
-    if (reviews.length > 0) fetchEmails();
-  }, [reviews]);
+  if (reviews.length > 0) fetchEmails();
+}, [reviews]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -436,7 +436,7 @@ const handlePasswordChange = async () => {
             </div>
 
             <div className="p-4 bg-white border shadow-md rounded-2xl space-y-4">
-              <h2 className="text-lg font-semibold">Cambiar contraseña</h2>
+              <h2 className="text-lg font-s emibold">Cambiar contraseña</h2>
               <Label htmlFor="newPassword">Nueva contraseña</Label>
               <Input id="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
               <Label htmlFor="confirmPassword">Confirmar nueva contraseña</Label>
@@ -449,7 +449,7 @@ const handlePasswordChange = async () => {
                 </Button>
 
                 {isUpdatingPassword && (
-                  <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
+                  <div className="  w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
                 )}
 
                 {passwordUpdated && (
@@ -502,110 +502,128 @@ const handlePasswordChange = async () => {
           )}
         </TabsContent>
 
-         <TabsContent value="reseñas">
-          {reviews.length === 0 ? (
-            <p className="text-gray-500">No has escrito reseñas todavía.</p>
-          ) : (
-            <div className="flex flex-col gap-6">
-              {reviews.map((review) => {
-                const imageUrls = typeof review.image_urls === 'string' ? JSON.parse(review.image_urls) : review.image_urls;
-                let imagesToShow = 4;
-                if (viewportWidth < 865) imagesToShow = 3;
-                if (viewportWidth < 650) imagesToShow = 2;
-                if (viewportWidth < 500) imagesToShow = 1;
-                if (viewportWidth < 400) imagesToShow = 2;
+       <TabsContent value="reseñas">
+  {reviews.length === 0 ? (
+    <p className="text-gray-500">No has escrito reseñas todavía.</p>
+  ) : (
+    <div className="flex flex-col space-y-8 pt-4 pb-10 min-h-screen">
+      {reviews.map((review) => {
+        const imageUrls = typeof review.image_urls === 'string' ? JSON.parse(review.image_urls) : review.image_urls;
+        const name = user.name?.split(' ').slice(0, 2).join(' ') || 'Usuario';
 
-                const visibleImages = imageUrls?.slice(0, imagesToShow) || [];
-                const extraImages = imageUrls?.length > imagesToShow ? imageUrls.length - imagesToShow : 0;
+        const visibleImages = imageUrls?.slice(0, 2) || [];
+        const extraImages = imageUrls?.length > 2 ? imageUrls.length - 2 : 0;
+        const shouldStack = viewportWidth < 500;
 
-                return (
-                  <div key={review.id} className="bg-white rounded-xl border shadow-sm p-4">
-                    <div className="flex flex-col reviews-row-layout gap-4">
-                      <div className="flex-1 space-y-2">
-                        <p className="text-sm font-semibold text-black">{user.email}</p>
-                        <div className="flex items-center gap-2">
-                          <div className="flex gap-1">
-                            {[1, 2, 3, 4, 5].map((v) => (
-                              <Star key={v} className={`w-4 h-4 ${v <= review.rating ? 'text-yellow-400' : 'text-gray-300'}`} fill={v <= review.rating ? 'currentColor' : 'none'} />
-                            ))}
-                          </div>
+        return (
+          <div key={review.id} className="bg-white rounded-xl border shadow-sm p-4 select-none">
+            <div className={`flex ${shouldStack ? 'flex-col' : 'flex-row items-start'} gap-4`}>
+              <div className="flex-1 min-w-0 space-y-2 overflow-hidden">
+                <p className="text-sm font-semibold text-black truncate">{name}</p>
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((v) => (
+                      <Star key={v} className={`w-4 h-4 ${v <= review.rating ? 'text-yellow-400' : 'text-gray-300'}`} fill={v <= review.rating ? 'currentColor' : 'none'} />
+                    ))}
+                  </div>
+                  <Button size="icon" variant="ghost" onClick={() => handleDelete(review)}>
+                    <Trash2 className="w-4 h-4 text-red-500" />
+                  </Button>
+                </div>
+                {review.product_id && (
+                  <Link to={`/productos/${review.product_id}`} className="text-sm text-blue-600 hover:underline">
+                    Ver producto
+                  </Link>
+                )}
+                <p className="text-sm text-gray-700 text-justify break-words whitespace-pre-wrap">{review.content}</p>
+              </div>
 
-                          <Button size="icon" variant="ghost" onClick={() => handleDelete(review)}>
-                            <Trash2 className="w-4 h-4 text-red-500" />
-                          </Button>
-                        </div>
-                        {review.product_id && (
-                          <Link
-                            to={`/productos/${review.product_id}`}
-                            className="text-sm text-blue-600 hover:underline"
-                          >
-                            Ver producto
-                          </Link>
-                        )}
-                        <p className="text-sm text-gray-700">{review.content}</p>
-                      </div>
-
-                      {Array.isArray(imageUrls) && imageUrls.length > 0 && (
-                        <div className={`grid gap-2 justify-end ${imagesToShow === 1 ? 'image-grid-1' : imagesToShow === 2 ? 'image-grid-2' : imagesToShow === 3 ? 'image-grid-3' : 'image-grid-4'}`}>
-                          {visibleImages.map((url, index) => (
-                            <div key={index} className="image-container">
-                              <img src={url} onClick={() => openLightbox(review, index)} className="review-image" alt={`img-${index}`} />
-                              {index === visibleImages.length - 1 && extraImages > 0 && (
-                                <div className="image-overlay" onClick={() => openLightbox(review, index)}>
-                                  +{extraImages}
-                                </div>
-                              )}
-                            </div>
-                          ))}
+              {Array.isArray(imageUrls) && imageUrls.length > 0 && (
+                <div className={`image-grid-2 ${shouldStack ? 'justify-start' : 'justify-center items-center self-center'}`}>
+                  {visibleImages.map((url, index) => (
+                    <div key={index} className="image-container">
+                      <img
+                        src={url}
+                        onClick={() => openLightbox(review, index)}
+                        className="review-image"
+                        alt={`img-${index}`}
+                        draggable={false}
+                      />
+                      {index === visibleImages.length - 1 && extraImages > 0 && (
+                        <div className="image-overlay" onClick={() => openLightbox(review, index)}>
+                          +{extraImages}
                         </div>
                       )}
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {selectedImageIndex !== null && (
-            <Dialog open={true} onOpenChange={closeLightbox}>
-              <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center" onClick={closeLightbox}>
-                <div className="bg-white rounded shadow-lg max-w-3xl w-full p-4" onClick={(e) => e.stopPropagation()}>
-                  <Swiper
-                    initialSlide={selectedImageIndex}
-                    modules={[Pagination]}
-                    pagination={{ clickable: true }}
-                    allowTouchMove={true}
-                    navigation={false}
-                    onSlideChange={({ activeIndex }) => {
-                      const newReview = allSlides[activeIndex]?.review;
-                      if (newReview?.id !== selectedReview?.id) {
-                        setSelectedReview(newReview);
-                      }
-                    }}
-                    className="mb-4"
-                  >
-                    {allSlides.map((slide, i) => (
-                      <SwiperSlide key={i}>
-                        <img src={slide.url} alt={`slide-${i}`} className="w-full h-auto max-h-[70vh] object-contain mx-auto" />
-                      </SwiperSlide>
-                    ))}
-                  </Swiper>
-                  {selectedReview && (
-                    <div className="text-center text-sm">
-                      <p className="font-semibold text-black mb-1">{user.email}</p>
-                      <div className="flex justify-center gap-1 mb-1">
-                        {[1, 2, 3, 4, 5].map((v) => (
-                          <Star key={v} className={`w-4 h-4 ${v <= selectedReview.rating ? 'text-yellow-400' : 'text-gray-300'}`} fill={v <= selectedReview.rating ? 'currentColor' : 'none'} />
-                        ))}
-                      </div>
-                      <p>{selectedReview.content}</p>
-                    </div>
-                  )}
+                  ))}
                 </div>
-              </div>
-            </Dialog>
-          )}
-        </TabsContent>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  )}
+
+  {selectedImageIndex !== null && (
+ <Dialog open={true} onOpenChange={closeLightbox}>
+  <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center" onClick={closeLightbox}>
+    <div className="bg-white rounded shadow-lg max-w-3xl w-full p-4 relative" onClick={(e) => e.stopPropagation()}>
+      <Swiper
+        initialSlide={selectedImageIndex}
+        modules={[Pagination, Navigation]}
+        pagination={{ clickable: true }}
+        loop
+        allowTouchMove
+        className="mb-4 select-none swiper"
+        onSlideChange={({ activeIndex }) => {
+          const newReview = allSlides[activeIndex]?.review;
+          if (newReview?.id !== selectedReview?.id) {
+            setSelectedReview(newReview);
+          }
+        }}
+      >
+        {allSlides.map((slide, i) => (
+          <SwiperSlide key={i}>
+            <img
+              src={slide.url}
+              alt={`slide-${i}`}
+              className="w-full h-auto max-h-[70vh] object-contain mx-auto select-none"
+              draggable={false}
+            />
+          </SwiperSlide>
+        ))}
+      </Swiper>
+      <button
+        onClick={() => document.querySelector('.swiper')?.swiper?.slidePrev()}
+        className="custom-swiper-prev absolute left-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-70 rounded-full p-1 shadow hover:bg-opacity-90 z-10"
+      >
+        <ChevronLeft className="h-5 w-5 text-black" />
+      </button>
+      <button
+        onClick={() => document.querySelector('.swiper')?.swiper?.slideNext()}
+        className="custom-swiper-next absolute right-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-70 rounded-full p-1 shadow hover:bg-opacity-90 z-10"
+      >
+        <ChevronRight className="h-5 w-5 text-black" />
+      </button>
+      {selectedReview && (
+        <div className="text-center text-sm">
+          <p className="font-semibold text-black mb-1">{user.name?.split(' ').slice(0, 2).join(' ') || 'Usuario'}</p>
+          <div className="flex justify-center gap-1 mb-1">
+            {[1, 2, 3, 4, 5].map((v) => (
+              <Star key={v} className={`w-4 h-4 ${v <= selectedReview.rating ? 'text-yellow-400' : 'text-gray-300'}`} fill={v <= selectedReview.rating ? 'currentColor' : 'none'} />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+</Dialog>
+
+
+  )}
+</TabsContent>
+
         </div>
         
 

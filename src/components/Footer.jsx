@@ -48,9 +48,9 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <span className="text-gray-400 hover:text-white hover:underline transition-colors cursor-pointer">
-                  Inspiración
-                </span>
+                  <Link to="/productos" className="text-gray-400 hover:text-white hover:underline transition-colors cursor-pointer">
+                    Productos                
+                  </Link>
               </li>
             </ul>
           </div>
