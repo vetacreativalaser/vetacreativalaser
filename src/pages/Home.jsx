@@ -62,6 +62,8 @@ const Home = () => {
 };
 
 
+console.log('Todas las categorías:', catData);
+
   return (
     <div className="min-h-screen bg-white text-black">
       {/* Hero */}
