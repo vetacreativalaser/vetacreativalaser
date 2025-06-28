@@ -26,6 +26,10 @@ const observer = new MutationObserver((mutations) => {
 		}
 	}
 });
+export default defineConfig({
+  base: './', // 👈 fuerza rutas relativas para evitar 404 en Netlify
+  ...
+})
 
 observer.observe(document.documentElement, {
 	childList: true,
