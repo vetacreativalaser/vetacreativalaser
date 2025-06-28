@@ -15,24 +15,37 @@ const Home = () => {
   const { user } = useAuth();
 
   useEffect(() => {
-    const fetchData = async () => {
-    const { data: catData } = await supabase
+  const fetchData = async () => {
+    const { data: catData, error: catError } = await supabase
       .from('categorias')
       .select('*')
       .eq('visible', true)
-      .order('fijada', { ascending: false }) // primero las fijadas
-      .order('created_at', { ascending: false }); // luego por fecha
+      .order('fijada', { ascending: false })
+      .order('created_at', { ascending: false });
 
-  setCategories(catData || []);
+    console.log('Categorías:', catData);
+    console.error('Error categorías:', catError);
 
-      const { data: bannerData } = await supabase.from('banner_principal').select('*').limit(1).single();
-      if (bannerData?.url) {
-        setBannerUrl(bannerData.url);
-        setBannerFile(bannerData.filename);
-      }
-    };
-    fetchData();
-  }, []);
+    setCategories(catData || []);
+
+    const { data: bannerData, error: bannerError } = await supabase
+      .from('banner_principal')
+      .select('*')
+      .limit(1)
+      .single();
+
+    console.log('Banner:', bannerData);
+    console.error('Error banner:', bannerError);
+
+    if (bannerData?.url) {
+      setBannerUrl(bannerData.url);
+      setBannerFile(bannerData.filename);
+    }
+  };
+
+  fetchData();
+}, []);
+
 
   const handleBannerUpload = async (publicUrl) => {
   // Guardar en base de datos
