@@ -73,43 +73,80 @@ export const AuthProvider = ({ children }) => {
           .select('*')
           .eq('id', data.user.id)
           .single();
-        if (profileError && profileError.code !== 'PGRST116') throw profileError;
-        setUser(userProfile ? { ...data.user, ...userProfile } : data.user);
+        if (data.user) {
+  const { data: userProfile, error: profileError } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', data.user.id)
+    .single();
+
+  if (profileError && profileError.code !== 'PGRST116') {
+    throw profileError;
+  }
+
+  if (!userProfile) {
+    // Si el perfil no existe, lo creamos ahora
+    const { error: insertError } = await supabase
+      .from('profiles')
+      .insert({
+        id: data.user.id,
+        email: data.user.email,
+        name: data.user.user_metadata?.name || '',
+        phone: data.user.user_metadata?.phone || '',
+        purchase_count: 0,
+      });
+
+    if (insertError) throw insertError;
+
+    setUser(data.user);
+  } else {
+    setUser({ ...data.user, ...userProfile });
+  }
+}
+
     }
     return data;
   };
 
-  const register = async (userData) => {
-    const { data, error } = await supabase.auth.signUp({
-      email: userData.email,
-      password: userData.password,
-      options: {
-        data: {
-          name: userData.name,
-          phone: userData.phone,
-          purchase_count: 0,
-        },
+const register = async (userData) => {
+  const { data, error } = await supabase.auth.signUp({
+    email: userData.email,
+    password: userData.password,
+    options: {
+      data: {
+        name: userData.name,
+        phone: userData.phone,
+        purchase_count: 0,
       },
-    });
-    if (error) {
-      throw error;
-    }
-    // Si el usuario fue creado, insertamos en "profiles"
-  if (data.user) {
-    const { error: profileError } = await supabase
+    },
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  const user = data.user;
+  if (!user || !user.id) {
+    throw new Error('No se pudo obtener el ID del usuario tras el registro.');
+  }
+
+  const { error: profileError } = await supabase
     .from('profiles')
     .insert({
-      id: data.user.id,
+      id: user.id,
       name: userData.name,
       phone: userData.phone,
       email: userData.email,
       purchase_count: 0,
-      });
+    });
 
-      if (profileError) throw profileError;
-    }
-    return data;
-  };
+  if (profileError) {
+    throw profileError;
+  }
+
+  return data;
+};
+
 
 
   const logout = async () => {
