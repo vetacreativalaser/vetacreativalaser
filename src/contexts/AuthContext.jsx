@@ -15,6 +15,7 @@ export const AuthProvider = ({ children }) => {
 
     console.log('📦 Sesión Supabase:', session);
     console.log('❌ Error sesión Supabase:', error);
+    console.log('📁 localStorage:', localStorage.getItem('supabase.auth.token'));
 
     if (error) {
       console.error("Error getting session:", error);
