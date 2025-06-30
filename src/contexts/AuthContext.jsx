@@ -10,32 +10,36 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-      console.log('🔁 useEffect AuthContext ejecutado');
+  const getSession = async () => {
+    const { data: { session }, error } = await supabase.auth.getSession();
 
-    const getSession = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) {
- console.log('📦 Sesión Supabase:', session);
-    console.log('❌ Error sesión Supabase:', error);        setLoading(false);
-        return;
-      }
-      
-      if (session) {
-        const { data: userProfile, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
+    console.log('📦 Sesión Supabase:', session);
+    console.log('❌ Error sesión Supabase:', error);
 
-        if (profileError && profileError.code !== 'PGRST116') { // PGRST116: no rows found
-          console.error("Error fetching user profile:", profileError);
-        }
-        setUser(userProfile ? { ...session.user, ...userProfile } : session.user);
-      }
+    if (error) {
+      console.error("Error getting session:", error);
       setLoading(false);
-    };
+      return;
+    }
 
-    getSession();
+    if (session) {
+      const { data: userProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
+      if (profileError && profileError.code !== 'PGRST116') {
+        console.error("Error fetching user profile:", profileError);
+      }
+
+      setUser(userProfile ? { ...session.user, ...userProfile } : session.user);
+    }
+
+    setLoading(false);
+  };
+
+  getSession();
 
     const { data: authSubscription } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session) {
