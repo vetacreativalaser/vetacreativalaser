@@ -15,8 +15,8 @@ export const AuthProvider = ({ children }) => {
     const getSession = async () => {
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error) {
-        console.error("Error getting session:", error);
-        setLoading(false);
+ console.log('📦 Sesión Supabase:', session);
+    console.log('❌ Error sesión Supabase:', error);        setLoading(false);
         return;
       }
       
