@@ -11,12 +11,13 @@ const Home = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data: catData } = await supabase.from('categorias').select('*').eq('visible', true).order('fijada', { ascending: false }).order('created_at', { ascending: false });
-      console.log('catData:', catData);
-console.log('error:', error);
-      setCategories(catData || []);
-   
-    };
+    const { data, error } = await supabase
+      .from('categorias')
+      .select('*');
+
+    console.log('📦 Categorías:', data);
+    console.log('❌ Error categorías:', error);
+  };
     fetchData();
   }, []);
 
