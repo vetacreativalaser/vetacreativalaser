@@ -31,7 +31,7 @@ const Home = () => {
   return (
     <main className="min-h-screen bg-white text-black">
       <section className="relative h-[60vh] md:h-[70vh] flex items-center justify-center overflow-hidden" aria-label="Sección principal con banner">
-        <img className="absolute inset-0 w-full h-full object-cover opacity-80" alt="Banner de productos en madera" src="public/bannner.webp" />
+        <img className="absolute inset-0 w-full h-full object-cover opacity-80" alt="Banner de productos en madera" href="https://dspsrnprvrpjrkicxiso.supabase.co/storage/v1/object/public/portadacategorias//banner.webp" />
         <div className="absolute inset-0 bg-black/30" aria-hidden="true" />
         {user?.email === 'vetacreativalaser@gmail.com' && (<><button onClick={() => setEditOpen(true)} className="absolute top-4 right-4 z-20 text-sm text-black bg-white px-3 py-1 rounded shadow hover:text-[#6b3e26]" aria-label="Editar banner principal">Editar</button><ImageCropDialog open={editOpen} onClose={() => setEditOpen(false)} onConfirm={handleBannerUpload} /></>)}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="relative z-10 text-center px-4"><Link to="/productos"><Button aria-label="Ir a productos" variant="outline" size="lg"className="border-2 border-white text-white bg-transparent hover:border-white hover:border-[3px] hover:text-white hover:bg-transparent px-12 py-4 uppercase tracking-wider font-semibold transition-all duration-150 ease-in-out"
