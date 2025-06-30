@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { LogIn } from 'lucide-react';
+console.log('🚪 Entrando en login');
 
 const Login = ({ isAuthPageContext = false }) => {
   const [email, setEmail] = useState('');

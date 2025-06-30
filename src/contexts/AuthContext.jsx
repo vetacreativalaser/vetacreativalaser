@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { toast } from '@/components/ui/use-toast';
+console.log('✅ AuthProvider montado');
 
 const AuthContext = createContext(null);
 
@@ -9,6 +10,8 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+      console.log('🔁 useEffect AuthContext ejecutado');
+
     const getSession = async () => {
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error) {

@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
+console.log('🏠 Home.jsx montado');
 
 const Home = () => {
   const [categories, setCategories] = useState([]);

@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserPlus } from 'lucide-react';
+console.log('🚪 Entrando en register');
 
 const Register = ({ isAuthPageContext = false }) => {
   const [name, setName] = useState('');
