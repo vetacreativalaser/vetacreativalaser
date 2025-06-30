@@ -1,7 +1,0 @@
-Resend1 = re_FPSCpy5x_9uc2kf1bGBUN9Hm3o5wCAnjG
-
-
-
-Deployed Functions on project dspsrnprvrpjrkicxiso: send-points-update
-Funcion enviar correos supabase  https://supabase.com/dashboard/project/dspsrnprvrpjrkicxiso/functions 
-Token supabase cli  cli_DESKTOP-SSHPIGK\isaac@DESKTOP-SSHPIGK_1750761597 created successfully.
