@@ -1,161 +1,129 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { toast } from '@/components/ui/use-toast';
-console.log('✅ AuthProvider montado');
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [triedSession, setTriedSession] = useState(false);
 
-  useEffect(() => {
-  const getSession = async () => {
-    const { data: { session }, error } = await supabase.auth.getSession();
+  const fetchUserProfile = async (userId) => {
+    const { data: userProfile, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
 
-    console.log('📦 Sesión Supabase:', session);
-    console.log('❌ Error sesión Supabase:', error);
-    console.log('📁 localStorage:', localStorage.getItem('supabase.auth.token'));
+    if (error && error.code !== 'PGRST116') {
+      console.error("❌ Error obteniendo perfil:", error);
+      return null;
+    }
+    return userProfile;
+  };
 
-    if (error) {
-      console.error("Error getting session:", error);
+  const handleSession = async (session) => {
+    if (!session?.user) {
+      setUser(null);
       setLoading(false);
       return;
     }
 
-    if (session) {
-      const { data: userProfile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
-
-      if (profileError && profileError.code !== 'PGRST116') {
-        console.error("Error fetching user profile:", profileError);
-      }
-
-      setUser(userProfile ? { ...session.user, ...userProfile } : session.user);
-    }
-
+    const userProfile = await fetchUserProfile(session.user.id);
+    setUser(userProfile ? { ...session.user, ...userProfile } : session.user);
     setLoading(false);
   };
 
-  getSession();
-
-    const { data: authSubscription } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session) {
-        const { data: userProfile, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-        
-        if (profileError && profileError.code !== 'PGRST116') {
-          console.error("Error fetching user profile on auth change:", profileError);
-        }
-        setUser(userProfile ? { ...session.user, ...userProfile } : session.user);
+  const tryGetSession = async (retry = 0) => {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error) {
+      console.error("❌ Error getSession:", error);
+      if (retry < 3) {
+        setTimeout(() => tryGetSession(retry + 1), 1000); // retry
       } else {
-        setUser(null);
+        setLoading(false);
       }
-      setLoading(false);
+      return;
+    }
+
+    await handleSession(session);
+    setTriedSession(true);
+  };
+
+  useEffect(() => {
+    console.log('✅ AuthProvider montado');
+    tryGetSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log('🔁 Cambio de sesión:', _event);
+      handleSession(session);
     });
 
     return () => {
-      if (authSubscription && typeof authSubscription.unsubscribe === 'function') {
-        authSubscription.unsubscribe();
+      if (authListener?.subscription?.unsubscribe) {
+        authListener.subscription.unsubscribe();
       }
     };
   }, []);
 
-  const login = async (credentials) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: credentials.email,
-      password: credentials.password,
-    });
-    if (error) {
-      throw error;
-    }
+  const login = async ({ email, password }) => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+
     if (data.user) {
-        const { data: userProfile, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', data.user.id)
-          .single();
-        if (data.user) {
-  const { data: userProfile, error: profileError } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', data.user.id)
-    .single();
+      let profile = await fetchUserProfile(data.user.id);
 
-  if (profileError && profileError.code !== 'PGRST116') {
-    throw profileError;
-  }
+      if (!profile) {
+        const { error: insertError } = await supabase.from('profiles').insert({
+          id: data.user.id,
+          email: data.user.email,
+          name: data.user.user_metadata?.name || '',
+          phone: data.user.user_metadata?.phone || '',
+          purchase_count: 0,
+        });
 
-  if (!userProfile) {
-    // Si el perfil no existe, lo creamos ahora
-    const { error: insertError } = await supabase
-      .from('profiles')
-      .insert({
-        id: data.user.id,
-        email: data.user.email,
-        name: data.user.user_metadata?.name || '',
-        phone: data.user.user_metadata?.phone || '',
-        purchase_count: 0,
-      });
+        if (insertError) throw insertError;
+      }
 
-    if (insertError) throw insertError;
-
-    setUser(data.user);
-  } else {
-    setUser({ ...data.user, ...userProfile });
-  }
-}
-
+      setUser(profile ? { ...data.user, ...profile } : data.user);
     }
+
     return data;
   };
 
-const register = async (userData) => {
-  const { data, error } = await supabase.auth.signUp({
-    email: userData.email,
-    password: userData.password,
-    options: {
-      data: {
-        name: userData.name,
-        phone: userData.phone,
-        purchase_count: 0,
-      },
-    },
-  });
-
-  if (error) {
-    throw error;
-  }
-
-  const user = data.user;
-  if (!user || !user.id) {
-    throw new Error('No se pudo obtener el ID del usuario tras el registro.');
-  }
-
-  const { error: profileError } = await supabase
-    .from('profiles')
-    .insert({
-      id: user.id,
-      name: userData.name,
-      phone: userData.phone,
+  const register = async (userData) => {
+    const { data, error } = await supabase.auth.signUp({
       email: userData.email,
-      purchase_count: 0,
+      password: userData.password,
+      options: {
+        data: {
+          name: userData.name,
+          phone: userData.phone,
+          purchase_count: 0,
+        },
+      },
     });
 
-  if (profileError) {
-    throw profileError;
-  }
+    if (error) throw error;
 
-  return data;
-};
+    const user = data.user;
+    if (!user?.id) throw new Error('No se pudo obtener el ID del usuario tras el registro.');
 
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .insert({
+        id: user.id,
+        name: userData.name,
+        phone: userData.phone,
+        email: userData.email,
+        purchase_count: 0,
+      });
 
+    if (profileError) throw profileError;
+
+    return data;
+  };
 
   const logout = async () => {
     const { error } = await supabase.auth.signOut();
@@ -164,61 +132,64 @@ const register = async (userData) => {
     }
     setUser(null);
   };
-  
+
   const updateUser = async (updatedData) => {
     if (!user) return;
 
-    const { data: authUpdateData, error: authUpdateError } = await supabase.auth.updateUser({
-        data: { name: updatedData.name, phone: updatedData.phone , email: updatedData.email} 
+    const { error: authUpdateError } = await supabase.auth.updateUser({
+      data: {
+        name: updatedData.name,
+        phone: updatedData.phone,
+        email: updatedData.email,
+      },
     });
-    
+
     if (authUpdateError) {
-        toast({ title: "Error al actualizar datos de autenticación", description: authUpdateError.message, variant: "destructive"});
-        throw authUpdateError;
+      toast({ title: "Error actualización auth", description: authUpdateError.message, variant: "destructive" });
+      throw authUpdateError;
     }
 
     const { data: profileUpdateData, error: profileUpdateError } = await supabase
-        .from('profiles')
-        .update({ 
-            name: updatedData.name, 
-            phone: updatedData.phone,
-
-        })
-        .eq('id', user.id)
-        .select()
-        .single();
+      .from('profiles')
+      .update({
+        name: updatedData.name,
+        phone: updatedData.phone,
+      })
+      .eq('id', user.id)
+      .select()
+      .single();
 
     if (profileUpdateError) {
-        toast({ title: "Error al actualizar perfil", description: profileUpdateError.message, variant: "destructive"});
-        throw profileUpdateError;
+      toast({ title: "Error actualización perfil", description: profileUpdateError.message, variant: "destructive" });
+      throw profileUpdateError;
     }
-    
-    if (profileUpdateData) {
-      setUser(prevUser => ({ ...prevUser, ...profileUpdateData }));
-    } else {
-      setUser(prevUser => ({ ...prevUser, name: updatedData.name, phone: updatedData.phone }));
-    }
+
+    setUser(prev => ({ ...prev, ...profileUpdateData }));
   };
 
   const sendPasswordResetEmail = async (email) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
   };
 
   const updatePassword = async (newPassword) => {
     const { error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
   };
 
-
   return (
-    <AuthContext.Provider value={{ user, login, logout, register, updateUser, loading, sendPasswordResetEmail, updatePassword }}>
+    <AuthContext.Provider value={{
+      user,
+      login,
+      logout,
+      register,
+      updateUser,
+      loading: loading || !triedSession,
+      sendPasswordResetEmail,
+      updatePassword
+    }}>
       {children}
     </AuthContext.Provider>
   );
