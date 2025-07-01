@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -12,7 +11,7 @@ const Wishlist = () => {
   const [favoriteItemsDetails, setFavoriteItemsDetails] = useState([]);
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
-  
+
   useEffect(() => {
     const fetchFavoriteDetails = async () => {
       if (user) {
@@ -24,11 +23,11 @@ const Wishlist = () => {
 
         if (favError) {
           console.error("Error fetching favorite IDs:", favError);
-          toast({title: "Error", description: "No se pudieron cargar los favoritos.", variant: "destructive"});
+          toast({ title: "Error", description: "No se pudieron cargar los favoritos.", variant: "destructive" });
           setIsLoading(false);
           return;
         }
-        
+
         if (favoriteProductIds && favoriteProductIds.length > 0) {
           const productIds = favoriteProductIds.map(f => f.product_id);
           const { data: productsData, error: productsError } = await supabase
@@ -38,7 +37,7 @@ const Wishlist = () => {
 
           if (productsError) {
             console.error("Error fetching product details:", productsError);
-            toast({title: "Error", description: "No se pudieron cargar los detalles de los productos favoritos.", variant: "destructive"});
+            toast({ title: "Error", description: "No se pudieron cargar los detalles de los productos favoritos.", variant: "destructive" });
           } else {
             setFavoriteItemsDetails(productsData || []);
           }
@@ -82,10 +81,23 @@ const Wishlist = () => {
     window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
   };
 
-  if (isLoading) {
-    return <div className="flex justify-center items-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div></div>;
-  }
+  const renderProductPrice = (price) => {
+    try {
+      const parsed = typeof price === 'string' ? JSON.parse(price) : price;
+      if (parsed?.type === 'fixed') return parsed.value || parsed.fixedPrice;
+      return 'var';
+    } catch (e) {
+      return 'var';
+    }
+  };
 
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen py-8 bg-white text-black">
@@ -96,17 +108,13 @@ const Wishlist = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-10"
         >
-          <Heart className="h-12 w-12 text-black mx-auto mb-4" strokeWidth={1.5}/>
-          <h1 className="text-4xl font-semibold text-black mb-3">
-            Mis Favoritos
-          </h1>
-          <p className="text-lg text-gray-600">
-            Tus productos preferidos guardados en un solo lugar.
-          </p>
+          <Heart className="h-12 w-12 text-black mx-auto mb-4" strokeWidth={1.5} />
+          <h1 className="text-4xl font-semibold text-black mb-3">Mis Favoritos</h1>
+          <p className="text-lg text-gray-600">Tus productos preferidos guardados en un solo lugar.</p>
         </motion.div>
 
         {favoriteItemsDetails.length === 0 ? (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             className="text-center py-12"
@@ -121,11 +129,7 @@ const Wishlist = () => {
             </Link>
           </motion.div>
         ) : (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="space-y-6"
-          >
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
             {favoriteItemsDetails.map((item, index) => (
               <motion.div
                 key={item.id}
@@ -135,36 +139,43 @@ const Wishlist = () => {
                 className="flex flex-col sm:flex-row items-center justify-between p-4 border border-gray-200 bg-white hover:shadow-md transition-shadow"
               >
                 <div className="flex items-center space-x-4 w-full sm:w-auto mb-4 sm:mb-0">
-                  <Link to={`/productos/${item.id}`} className="block w-20 h-20 bg-gray-100 overflow-hidden shrink-0">
-                    <img-replace 
+                  <Link to={`/productos/${item.id}`} className="block w-20 h-20 bg-gray-100 overflow-hidden shrink-0 rounded">
+                    <img
                       className="w-full h-full object-cover"
-                      alt={item.image_alts && item.image_alts.length > 0 ? item.image_alts[0] : item.name}
-                      src={(item.image_urls && item.image_urls.length > 0) ? item.image_urls[0] : "https://images.unsplash.com/photo-1598020856638-cbc3b47bbada"}
+                      alt={item.image_alts?.[0] || item.name}
+                      src={(() => {
+                        try {
+                          const urls = typeof item.image_urls === 'string' ? JSON.parse(item.image_urls) : item.image_urls;
+                          return Array.isArray(urls) && urls.length > 0 ? urls[0] : "https://images.unsplash.com/photo-1598020856638-cbc3b47bbada";
+                        } catch {
+                          return "https://images.unsplash.com/photo-1598020856638-cbc3b47bbada";
+                        }
+                      })()}
                     />
                   </Link>
                   <div className="flex-grow">
                     <Link to={`/productos/${item.id}`}>
                       <h2 className="text-lg font-medium text-black hover:underline">{item.name}</h2>
                     </Link>
-                    <p className="text-gray-500 text-sm">{item.price}</p>
+                    <p className="text-gray-500 text-sm">{renderProductPrice(item.price)} €</p>
                   </div>
                 </div>
                 <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="border-gray-300 hover:border-black text-xs w-full sm:w-auto"
                     onClick={() => handleContactAboutProduct(item.name)}
                   >
                     <MessageCircle className="mr-2 h-3 w-3 sm:hidden md:inline-block" /> Contactar
                   </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     className="text-gray-400 hover:text-red-500 w-full sm:w-auto"
                     onClick={() => removeFromFavorites(item.id)}
                   >
-                     <Trash2 className="mr-2 h-3 w-3 sm:hidden md:inline-block" /> Eliminar
+                    <Trash2 className="mr-2 h-3 w-3 sm:hidden md:inline-block" /> Eliminar
                   </Button>
                 </div>
               </motion.div>

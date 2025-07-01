@@ -62,8 +62,8 @@ const Home = () => {
                 tabIndex={0}
                 role="link"
                 aria-label={`Ver productos de la categoría ${title}`}
-                onClick={() => window.location.href = `/productos?categoria=${filter}`}
-                onKeyDown={(e) => e.key === 'Enter' && (window.location.href = `/productos?categoria=${filter}`)}
+                onClick={() => window.location.href = `/productos?category_id=${id}`}
+                onKeyDown={(e) => e.key === 'Enter' && (window.location.href = `/productos?category_id=${id}`)}
               >
                 <div className="w-full aspect-square bg-gray-100 overflow-hidden">
                   <img

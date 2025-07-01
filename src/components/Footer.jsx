@@ -84,9 +84,37 @@ const Footer = () => {
             </div>
             
             <div className="flex space-x-4 mt-6">
-              <Facebook className="h-5 w-5 text-gray-400 hover:text-white cursor-pointer transition-colors" />
-              <Instagram className="h-5 w-5 text-gray-400 hover:text-white cursor-pointer transition-colors" />
-              <Twitter className="h-5 w-5 text-gray-400 hover:text-white cursor-pointer transition-colors" />
+              <a
+  href="https://www.facebook.com/profile.php?id=61574227811463"
+  target="_blank"
+  rel="noopener noreferrer"
+>
+  <Facebook className="h-5 w-5 text-gray-400 hover:text-white cursor-pointer transition-colors" />
+</a>
+
+<a
+  href="https://www.instagram.com/vetacreativalaser"
+  target="_blank"
+  rel="noopener noreferrer"
+>
+  <Instagram className="h-5 w-5 text-gray-400 hover:text-white cursor-pointer transition-colors" />
+</a>
+
+<a
+  href="https://www.tiktok.com/@vetacreativalaser"
+  target="_blank"
+  rel="noopener noreferrer"
+>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    fill="currentColor"
+    viewBox="0 0 24 24"
+    className="h-5 w-5 text-gray-400 hover:text-white cursor-pointer transition-colors"
+  >
+    <path d="M9.5 3.8v12.3c0 1.5-.7 2.2-1.7 2.2s-1.8-.7-1.8-2.1c0-1.3.7-2.1 1.8-2.1.4 0 .7.1 1 .3V11c-.3 0-.6-.1-1-.1-2.3 0-4 1.6-4 4.1 0 2.4 1.7 4.1 3.9 4.1 2.3 0 3.9-1.7 3.9-4.1V8.1c.9.6 2.1.9 3.1.9v-2c-.6 0-1.4-.3-2.1-.8-.6-.5-.9-1.1-.9-2.1H9.5z" />
+  </svg>
+</a>
+
             </div>
           </div>
         </div>

@@ -10,85 +10,103 @@ import { supabase } from '@/lib/supabaseClient';
 const Products = () => {
   const [searchParams] = useSearchParams();
   const [favorites, setFavorites] = useState([]);
-  const { user } = useAuth();
-  const [isLoadingFavorites, setIsLoadingFavorites] = useState(false);
-  const [allProducts, setAllProducts] = useState([]);
+  const [products, setProducts] = useState([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [isLoadingFavorites, setIsLoadingFavorites] = useState(false);
+  const { user } = useAuth();
 
-  const selectedCategory = searchParams.get('categoria') || 'todos';
+  const categoryId = searchParams.get('category_id'); // ⚠️ aquí leemos el ID numérico
 
+  // 🛒 Obtener productos
   useEffect(() => {
     const fetchProducts = async () => {
       setIsLoadingProducts(true);
-      const { data, error } = await supabase
+
+      let query = supabase
         .from('products')
-        .select('*')
+        .select(`
+          *,
+          categorias:category_id ( title )
+        `)
+        .eq('visible', true)
         .order('created_at', { ascending: false });
 
+      if (categoryId) {
+        query = query.eq('category_id', categoryId);
+      }
+
+      const { data, error } = await query;
       if (error) {
-        console.error("Error fetching products:", error);
+        console.error("Error cargando productos:", error);
         toast({ title: "Error", description: "No se pudieron cargar los productos.", variant: "destructive" });
       } else {
-        setAllProducts(data || []);
+        setProducts(data || []);
       }
+
       setIsLoadingProducts(false);
     };
+
     fetchProducts();
-  }, []);
+  }, [categoryId]);
 
-  const products = selectedCategory === 'todos'
-    ? allProducts
-    : allProducts.filter(product => product.category === selectedCategory);
-
+  // ❤️ Obtener favoritos del usuario
   useEffect(() => {
     const fetchFavorites = async () => {
-      if (user) {
-        setIsLoadingFavorites(true);
-        const { data, error } = await supabase
-          .from('favorites')
-          .select('product_id')
-          .eq('user_id', user.id);
-        if (error) console.error("Error fetching favorites:", error);
-        else setFavorites(data.map(fav => fav.product_id));
-        setIsLoadingFavorites(false);
-      } else {
-        setFavorites([]); 
-      }
+      if (!user) return setFavorites([]);
+      setIsLoadingFavorites(true);
+
+      const { data, error } = await supabase
+        .from('favorites')
+        .select('product_id')
+        .eq('user_id', user.id);
+
+      if (error) console.error("Error fetching favorites:", error);
+      else setFavorites(data.map(fav => fav.product_id));
+
+      setIsLoadingFavorites(false);
     };
+
     fetchFavorites();
   }, [user]);
 
+  // 🔁 Alternar favorito
   const toggleFavorite = async (productId) => {
     if (!user) {
       toast({ title: "Inicia sesión", description: "Debes iniciar sesión para añadir a favoritos.", variant: "destructive" });
       return;
     }
+
     setIsLoadingFavorites(true);
-    const isCurrentlyFavorite = favorites.includes(productId);
-    if (isCurrentlyFavorite) {
+    const isFav = favorites.includes(productId);
+
+    if (isFav) {
       const { error } = await supabase
         .from('favorites')
         .delete()
         .eq('user_id', user.id)
         .eq('product_id', productId);
-      if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
-      else setFavorites(prev => prev.filter(id => id !== productId));
+      if (!error) setFavorites(prev => prev.filter(id => id !== productId));
     } else {
       const { error } = await supabase
         .from('favorites')
         .insert([{ user_id: user.id, product_id: productId }]);
-      if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
-      else setFavorites(prev => [...prev, productId]);
+      if (!error) setFavorites(prev => [...prev, productId]);
     }
+
     toast({
-      title: !isCurrentlyFavorite ? "Añadido a Favoritos" : "Eliminado de Favoritos",
+      title: isFav ? "Eliminado de Favoritos" : "Añadido a Favoritos",
       description: products.find(p => p.id === productId)?.name,
     });
+
     setIsLoadingFavorites(false);
   };
 
   if (isLoadingProducts) {
-    return <div className="flex justify-center items-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div></div>;
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
+      </div>
+    );
   }
 
   return (
@@ -103,7 +121,7 @@ const Products = () => {
         >
           <h1 className="text-4xl font-semibold mb-2">PRODUCTOS</h1>
           <p className="text-gray-500">
-            Mostrando {products.length} resultados
+            Mostrando {products.length} resultado(s)
           </p>
         </motion.div>
 
@@ -163,7 +181,7 @@ const Products = () => {
                       const parsedPrice = typeof product.price === 'string' ? JSON.parse(product.price) : product.price;
                       if (parsedPrice?.type === 'fixed') return `${parsedPrice.value || parsedPrice.fixedPrice} €`;
                       return 'variable €';
-                    } catch (error) {
+                    } catch {
                       return 'variable €';
                     }
                   })()}

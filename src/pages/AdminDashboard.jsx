@@ -304,6 +304,29 @@ const AdminDashboard = () => {
       .eq('product_id', productId); // o el nombre correcto de tu columna
 
     if (favError) throw favError;
+ // 2. Obtener las reseñas asociadas (para luego borrar imágenes si hace falta)
+    const { data: reviews, error: fetchReviewsError } = await supabase
+      .from('reviews')
+      .select('id, image_urls') // si usas 'image_urls' para las imágenes
+      .eq('product_id', productId);
+    if (fetchReviewsError) throw fetchReviewsError;
+
+    // 3. Borrar imágenes de reseñas del bucket (si usas Supabase Storage)
+    for (const review of reviews || []) {
+      if (review.image_urls && Array.isArray(review.image_urls)) {
+        const { error: storageError } = await supabase.storage
+          .from('reviews') // nombre del bucket
+          .remove(review.image_urls); // array de paths
+        if (storageError) console.warn('Error al borrar imágenes:', storageError.message);
+      }
+    }
+
+    // 4. Eliminar reseñas asociadas al producto
+    const { error: reviewsDeleteError } = await supabase
+      .from('reviews')
+      .delete()
+      .eq('product_id', productId);
+    if (reviewsDeleteError) throw reviewsDeleteError;
 
     const { error } = await supabase
       .from('products')

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -8,43 +7,41 @@ import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 
-const allProductsData = [ 
-    { id: 1, name: 'Kit San Valentín Romántico', category: 'temporada', price: '25,99 €', imageAlt: 'Kit romántico de San Valentín en madera', imageText: 'Kit de madera para San Valentín con corazones' },
-    { id: 2, name: 'Marco Natalicio Personalizado', category: 'natalicio', price: '18,50 €', imageAlt: 'Marco de madera personalizado para nacimiento de bebé', imageText: 'Marco de nacimiento con detalles de bebé en madera' },
-    { id: 3, name: 'Kit Creativo Completo', category: 'kits', price: '35,00 €', imageAlt: 'Kit de manualidades completo con piezas de madera', imageText: 'Kit creativo Veta Laser con varias piezas' },
-    { id: 4, name: 'Álbum de Recuerdos', category: 'album', price: '22,75 €', imageAlt: 'Álbum de fotos de madera con cubierta grabada', imageText: 'Álbum de madera personalizado para recuerdos' },
-    { id: 5, name: 'Letras Personalizadas', category: 'nombres', price: '12,99 €', imageAlt: 'Letras de madera personalizadas para decoración del hogar', imageText: 'Nombre decorativo en madera cortado con láser' },
-    { id: 6, name: 'Caja Decorativa Premium', category: 'cajas', price: '28,00 €', imageAlt: 'Caja de madera premium con patrones cortados a láser', imageText: 'Caja de madera elegante con diseño intrincado' },
-    { id: 7, name: 'Set Corazones San Valentín', category: 'temporada', price: '15,99 €', imageAlt: 'Conjunto de corazones de madera para decoración de San Valentín', imageText: 'Corazones de madera para manualidades de San Valentín' },
-    { id: 8, name: 'Marco Foto Bebé', category: 'natalicio', price: '16,50 €', imageAlt: 'Marco de fotos de bebé de madera con motivos de animales', imageText: 'Marco de madera para primera foto de bebé' },
-    { id: 9, name: 'Bola personalizada navideña para animales', category: 'temporada', price: '4,50 €', imageAlt: 'Adorno navideño de madera personalizado para mascotas', imageText: 'Bola de Navidad de madera para perro o gato' },
-    { id: 10, name: 'Cajas 25*15*9', category: 'cajas', price: '25,00 €', imageAlt: 'Caja de madera de tamaño 25x15x9 cm', imageText: 'Caja de almacenamiento de madera simple' },
-    { id: 11, name: 'Cajas con forma de corazón', category: 'cajas', price: '15,00 €', imageAlt: 'Caja de madera con forma de corazón para regalos', imageText: 'Caja de madera en forma de corazón' },
-    { id: 12, name: 'Cajas de 20*10*6cm', category: 'cajas', price: '25,00 €', imageAlt: 'Caja de madera de tamaño 20x10x6 cm', imageText: 'Caja de madera rectangular pequeña' }
+// TODO: Reemplaza esta lista por una llamada real a Supabase si hace falta.
+const allProductsData = [
+  // ...
 ];
 
+const normalizeText = (text) => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+const renderProductPrice = (price) => {
+  try {
+    const parsed = typeof price === 'string' ? JSON.parse(price) : price;
+    if (parsed?.type === 'fixed') return `${parsed.value || parsed.fixedPrice} €`;
+    return 'var';
+  } catch (e) {
+    return 'var';
+  }
+};
 
 const SearchResults = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const query = searchParams.get('q');
+  const query = searchParams.get('q') || '';
   const [results, setResults] = useState([]);
   const [favorites, setFavorites] = useState([]);
   const { user } = useAuth();
   const [isLoadingFavorites, setIsLoadingFavorites] = useState(false);
 
   useEffect(() => {
-    if (query) {
-      const lowerCaseQuery = query.toLowerCase();
-      const filteredProducts = allProductsData.filter(product =>
-        product.name.toLowerCase().includes(lowerCaseQuery) ||
-        product.category.toLowerCase().includes(lowerCaseQuery) ||
-        (product.description && product.description.toLowerCase().includes(lowerCaseQuery))
-      );
-      setResults(filteredProducts);
-    } else {
-      setResults([]);
-    }
+    const lowerQuery = normalizeText(query);
+    const filtered = allProductsData.filter(product => {
+      const name = normalizeText(product.name);
+      const category = normalizeText(product.category || '');
+      const description = normalizeText(product.description || '');
+      return name.includes(lowerQuery) || category.includes(lowerQuery) || description.includes(lowerQuery);
+    });
+    setResults(filtered);
   }, [query]);
 
   useEffect(() => {
@@ -71,9 +68,9 @@ const SearchResults = () => {
       return;
     }
     setIsLoadingFavorites(true);
-    const isCurrentlyFavorite = favorites.includes(productId);
+    const isFav = favorites.includes(productId);
 
-    if (isCurrentlyFavorite) {
+    if (isFav) {
       const { error } = await supabase
         .from('favorites')
         .delete()
@@ -88,13 +85,13 @@ const SearchResults = () => {
       if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
       else setFavorites(prev => [...prev, productId]);
     }
+
     toast({
-      title: !isCurrentlyFavorite ? "Añadido a Favoritos" : "Eliminado de Favoritos",
+      title: isFav ? "Eliminado de Favoritos" : "Añadido a Favoritos",
       description: allProductsData.find(p => p.id === productId)?.name,
     });
     setIsLoadingFavorites(false);
   };
-
 
   return (
     <div className="min-h-screen py-12 bg-white text-black">
@@ -104,14 +101,12 @@ const SearchResults = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
-          <SearchIconPlain className="h-10 w-10 mx-auto mb-3 text-black" strokeWidth={2}/>
+          <SearchIconPlain className="h-10 w-10 mx-auto mb-3 text-black" strokeWidth={2} />
           <h1 className="text-3xl font-semibold mb-2">Resultados de Búsqueda para "{query}"</h1>
-          <p className="text-gray-500">
-            {results.length} producto(s) encontrado(s).
-          </p>
-          <Button 
-            variant="outline" 
-            onClick={() => navigate('/productos')} 
+          <p className="text-gray-500">{results.length} producto(s) encontrado(s).</p>
+          <Button
+            variant="outline"
+            onClick={() => navigate('/productos')}
             className="mt-4 border-black text-black hover:bg-black hover:text-white"
           >
             <ArrowLeft className="mr-2 h-4 w-4" /> Volver a Productos
@@ -128,12 +123,13 @@ const SearchResults = () => {
                 transition={{ delay: index * 0.05 }}
                 className="group relative"
               >
-                <div className="relative w-full aspect-square bg-gray-100 overflow-hidden">
+                <div className="relative w-full aspect-square bg-gray-100 overflow-hidden rounded">
                   <Link to={`/productos/${product.id}`}>
-                    <img-replace 
+                    <img
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      alt={product.imageAlt}
-                     src="https://images.unsplash.com/photo-1635865165118-917ed9e20936" />
+                      alt={product.imageAlt || product.name}
+                      src={product.image_urls?.[0] || "https://images.unsplash.com/photo-1635865165118-917ed9e20936"}
+                    />
                   </Link>
                   <Button
                     variant="ghost"
@@ -142,7 +138,11 @@ const SearchResults = () => {
                     onClick={() => toggleFavorite(product.id)}
                     disabled={isLoadingFavorites}
                   >
-                    {isLoadingFavorites && favorites.includes(product.id) ? <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-500"></div> : <Heart className={`h-4 w-4 ${favorites.includes(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} strokeWidth={1.5} />}
+                    {isLoadingFavorites && favorites.includes(product.id) ? (
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-500"></div>
+                    ) : (
+                      <Heart className={`h-4 w-4 ${favorites.includes(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} strokeWidth={1.5} />
+                    )}
                   </Button>
                 </div>
                 <div className="mt-3 text-center">
@@ -151,7 +151,7 @@ const SearchResults = () => {
                       {product.name}
                     </Link>
                   </h3>
-                  <p className="mt-1 text-sm text-gray-500">{product.price}</p>
+                  <p className="mt-1 text-sm text-gray-500">{renderProductPrice(product.price)}</p>
                 </div>
               </motion.div>
             ))}
