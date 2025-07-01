@@ -18,7 +18,10 @@ const Home = () => {
 
     console.log('📦 Categorías:', data);
     console.log('❌ Error categorías:', error);
+    setCategories(data);
+
   };
+  
     fetchData();
   }, []);
 
