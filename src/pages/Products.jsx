@@ -152,12 +152,12 @@ const Products = () => {
                 transition={{ delay: index * 0.05 + 0.1, duration: 0.4, ease: 'easeOut' }}
                 className="mt-3 text-center py-2 px-1 rounded group-hover:bg-gray-100 transition-colors"
               >
-                <h3 className="text-md font-medium text-black">
+                <h3 className="text-md font-medium text-black text-left">
                   <Link to={`/productos/${product.id}`}>
                     {product.name}
                   </Link>
                 </h3>
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm text-left text-gray-500">
                   {(() => {
                     try {
                       const parsedPrice = typeof product.price === 'string' ? JSON.parse(product.price) : product.price;
