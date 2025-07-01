@@ -4,21 +4,26 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
+console.log('🏠 Home.jsx montado');
 
 const Home = () => {
-useEffect(() => {
-  const fetchData = async () => {
+  const [categories, setCategories] = useState([]);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    const fetchData = async () => {
     const { data, error } = await supabase
       .from('categorias')
       .select('*')
-      .order('fijada', { ascending: false }) // primero fijadas
+       .order('fijada', { ascending: false }) // primero fijadas
       .order('title', { ascending: true })   // luego alfabéticamente
       .eq('visible', true); // solo visibles
     setCategories(data);
-  };
 
-  fetchData();
-}, []);
+  };
+  
+    fetchData();
+  }, []);
 
 
 
