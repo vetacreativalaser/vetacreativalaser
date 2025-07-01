@@ -298,6 +298,13 @@ const AdminDashboard = () => {
 
     const handleDeleteProduct = async (productId) => {
     setIsLoading(true);
+    const { error: favError } = await supabase
+      .from('favorites')
+      .delete()
+      .eq('product_id', productId); // o el nombre correcto de tu columna
+
+    if (favError) throw favError;
+
     const { error } = await supabase
       .from('products')
       .delete()
