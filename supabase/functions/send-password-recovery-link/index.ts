@@ -9,7 +9,7 @@ const supabase = createClient(
   // @ts-ignore
   Deno.env.get('SUPABASE_URL')!,
   // @ts-ignore
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')! // Necesario para usar auth.admin
+  Deno.env.get('SERVICE_ROLE_KEY')! // Necesario para usar auth.admin
 );
   // @ts-ignore
 
