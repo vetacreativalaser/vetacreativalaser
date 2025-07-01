@@ -92,7 +92,6 @@ const Profile = () => {
       })
     });
 
-    console.log(`Correo de subida a nivel ${level} enviado a ${email}`);
   } catch (error) {
     console.error('Error al enviar correo de subida de nivel:', error);
   }

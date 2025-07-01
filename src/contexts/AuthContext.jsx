@@ -52,11 +52,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    console.log('✅ AuthProvider montado');
     tryGetSession();
 
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log('🔁 Cambio de sesión:', _event);
       handleSession(session);
     });
 
