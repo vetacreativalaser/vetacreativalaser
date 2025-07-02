@@ -1,12 +1,12 @@
 // @ts-ignore
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'; 
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 // @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js';
 
 const supabase = createClient(
-  // @ts-ignore
+// @ts-ignore
   Deno.env.get('SUPABASE_URL')!,
-  // @ts-ignore
+// @ts-ignore
   Deno.env.get('SERVICE_ROLE_KEY')!
 );
 
@@ -31,13 +31,14 @@ serve(async (req) => {
       });
     }
 
-    const { data: tokenData, error } = await supabase
+    const { data: tokenData, error: tokenError } = await supabase
       .from('password_reset_tokens')
       .select('*')
       .eq('token', token)
       .single();
 
-    if (error || !tokenData) {
+    if (tokenError || !tokenData) {
+      console.error('🔴 Token inválido:', tokenError);
       return new Response(JSON.stringify({ error: 'Token inválido' }), {
         status: 400,
         headers: { 'Access-Control-Allow-Origin': '*' }
@@ -60,15 +61,16 @@ serve(async (req) => {
       });
     }
 
-    const { data: users, error: userError } = await supabase.auth.admin.listUsers();
-    if (userError || !users) {
+    const { data: usersData, error: userError } = await supabase.auth.admin.listUsers();
+    if (userError || !usersData || !Array.isArray(usersData.users)) {
+      console.error('🔴 Error buscando usuarios:', userError);
       return new Response(JSON.stringify({ error: 'Error al buscar usuarios' }), {
         status: 500,
         headers: { 'Access-Control-Allow-Origin': '*' }
       });
     }
 
-    const user = users.find((u) => u.email === tokenData.email);
+    const user = usersData.users.find((u) => u.email === tokenData.email);
     if (!user) {
       return new Response(JSON.stringify({ error: 'Usuario no encontrado' }), {
         status: 404,
@@ -81,6 +83,7 @@ serve(async (req) => {
     });
 
     if (updateError) {
+      console.error('🔴 Error actualizando contraseña:', updateError);
       return new Response(JSON.stringify({ error: 'No se pudo actualizar la contraseña' }), {
         status: 500,
         headers: { 'Access-Control-Allow-Origin': '*' }
@@ -93,6 +96,7 @@ serve(async (req) => {
       .eq('token', token);
 
     if (markUsedError) {
+      console.error('🔴 Error marcando token como usado:', markUsedError);
       return new Response(JSON.stringify({ error: 'No se pudo marcar el token como usado' }), {
         status: 500,
         headers: { 'Access-Control-Allow-Origin': '*' }
