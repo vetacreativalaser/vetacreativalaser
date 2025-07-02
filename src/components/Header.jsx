@@ -103,11 +103,11 @@ const Header = () => {
                   src="https://dspsrnprvrpjrkicxiso.supabase.co/storage/v1/object/public/imgadmins//Logo-esc.webp"
                   alt="Veta Creativa Laser Logo"
                   className="
-                    h-24 w-[12rem]    
-                    sm:h-24 sm:w-[12rem] 
-                    md:h-22 md:w-[11rem] 
-                    lg:h-22 lg:w-[11rem]     /* 64px alto → 144px ancho */
-                    xl:h-22 xl:w-[11rem] /* 80px alto → 180px ancho */
+                    h-22 w-[10.5rem]    
+                    sm:h-22 sm:w-[10.5rem] 
+                    md:h-22 md:w-[10.5rem] 
+                    lg:h-22 lg:w-[10.5rem]     /* 64px alto → 144px ancho */
+                    xl:h-22 xl:w-[10.5rem] /* 80px alto → 180px ancho */
                   "
                 />
               </Link>
