@@ -99,9 +99,20 @@ const Header = () => {
             
             <div className="flex-grow flex justify-center md:flex-grow-0 md:flex-none md:justify-start">
               <Link to="/" className="flex items-center">
-                <img src="https://storage.googleapis.com/hostinger-horizons-assets-prod/51fdf2fa-9931-48c7-9915-71ba907b019e/95791ac9cd7a505e89ef2dc007cf0fab.png" alt="Veta Creativa Laser Logo" />
+                <img
+                  src="https://storage.googleapis.com/hostinger-horizons-assets-prod/51fdf2fa-9931-48c7-9915-71ba907b019e/95791ac9cd7a505e89ef2dc007cf0fab.png"
+                  alt="Veta Creativa Laser Logo"
+                  className="
+                    h-10 w-[5.625rem]     /* 40px alto → 90px ancho */
+                    sm:h-12 sm:w-[6.75rem] /* 48px alto → 108px ancho */
+                    md:h-14 md:w-[7.875rem] /* 56px alto → 126px ancho */
+                    lg:h-16 lg:w-[9rem]     /* 64px alto → 144px ancho */
+                    xl:h-20 xl:w-[11.25rem] /* 80px alto → 180px ancho */
+                  "
+                />
               </Link>
             </div>
+
 
             <div className="hidden md:flex items-center">
               <nav className="flex space-x-5 mr-4">
