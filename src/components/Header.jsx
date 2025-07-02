@@ -103,11 +103,11 @@ const Header = () => {
                   src="https://storage.googleapis.com/hostinger-horizons-assets-prod/51fdf2fa-9931-48c7-9915-71ba907b019e/95791ac9cd7a505e89ef2dc007cf0fab.png"
                   alt="Veta Creativa Laser Logo"
                   className="
-                    h-10 w-[5.625rem]     /* 40px alto → 90px ancho */
-                    sm:h-12 sm:w-[6.75rem] /* 48px alto → 108px ancho */
-                    md:h-14 md:w-[7.875rem] /* 56px alto → 126px ancho */
-                    lg:h-16 lg:w-[9rem]     /* 64px alto → 144px ancho */
-                    xl:h-20 xl:w-[11.25rem] /* 80px alto → 180px ancho */
+                    h-26 w-[14.625rem]    
+                    sm:h-24 sm:w-[13.5rem] 
+                    md:h-22 md:w-[12.375rem] 
+                    lg:h-22 lg:w-[12.375rem]    
+                    xl:h-22 xl:w-[12.375rem]
                   "
                 />
               </Link>
