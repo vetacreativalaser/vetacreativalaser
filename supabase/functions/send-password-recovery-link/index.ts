@@ -45,12 +45,15 @@ serve(async (req) => {
     });
 
     if (error || !data?.action_link) {
-      console.error('Error generando el enlace:', error?.message);
-      return new Response(JSON.stringify({ error: 'No se pudo generar el enlace' }), {
-        status: 500,
-        headers: { 'Access-Control-Allow-Origin': '*' }
-      });
-    }
+  console.error('Error generando el enlace:');
+  console.error('🔍 Error:', error);
+  console.error('📦 Data:', data);
+  return new Response(JSON.stringify({ error: 'No se pudo generar el enlace' }), {
+    status: 500,
+    headers: { 'Access-Control-Allow-Origin': '*' }
+  });
+}
+
 
     // 2. Extraer el token del enlace generado
     const token = new URL(data.action_link).searchParams.get('token');
