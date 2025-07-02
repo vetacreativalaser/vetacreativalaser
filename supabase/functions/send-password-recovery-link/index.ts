@@ -9,10 +9,9 @@ const supabase = createClient(
   // @ts-ignore
   Deno.env.get('SUPABASE_URL')!,
   // @ts-ignore
-  Deno.env.get('SERVICE_ROLE_KEY')! // Necesario para usar auth.admin
+  Deno.env.get('SERVICE_ROLE_KEY')! // clave de servicio para usar auth.admin
 );
-  // @ts-ignore
-
+// @ts-ignore
 const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
 serve(async (req) => {
@@ -26,79 +25,90 @@ serve(async (req) => {
     });
   }
 
-try {
-  const { email } = await req.json();
-  console.log('🟡 Recibido email:', email);
-
-  if (!email) {
-    console.log('❌ Falta email');
-    return new Response(JSON.stringify({ error: 'Falta email' }), { status: 400 });
-  }
-
-  const { data, error } = await supabase.auth.admin.generateLink({
-    type: 'recovery',
-    email,
-    options: {
-      redirectTo: 'https://vetacreativalaser.es/reset-password'
+  try {
+    const { email } = await req.json();
+    if (!email) {
+      return new Response(JSON.stringify({ error: 'Falta email' }), {
+        status: 400,
+        headers: { 'Access-Control-Allow-Origin': '*' }
+      });
     }
-  });
 
-  const actionLink = data?.properties?.action_link;
+    // Generar token de recuperación
+    const { data, error } = await supabase.auth.admin.generateLink({
+      type: 'recovery',
+      email,
+      options: { redirectTo: 'https://vetacreativalaser.es/reset-password' }
+    });
 
-  if (error || !actionLink) {
-    console.error('❌ Error al generar enlace:', error);
-    console.error('📦 Data recibida:', data);
-    return new Response(JSON.stringify({ error: 'No se pudo generar el enlace' }), { status: 500 });
-  }
-
-  console.log('✅ Enlace generado:', actionLink);
-
-  const token = new URL(actionLink).searchParams.get('token');
-  if (!token) {
-    console.error('❌ Token no encontrado en actionLink');
-    return new Response(JSON.stringify({ error: 'Token no encontrado en el enlace' }), { status: 500 });
-  }
-
-  console.log('🧪 Token extraído:', token);
-
-  const expiresAt = new Date(Date.now() + 1000 * 60 * 30); // 30 minutos
-  console.log('📅 Expira en:', expiresAt.toISOString());
-
-  const { error: insertError } = await supabase
-    .from('password_reset_tokens')
-    .insert([{ token, email, used: false, expires_at: expiresAt.toISOString() }]);
-
-  if (insertError) {
-    console.error('❌ Error insertando token:', insertError.message);
-    return new Response(JSON.stringify({ error: 'No se pudo guardar el token' }), { status: 500 });
-  }
-
-  console.log('✅ Token guardado correctamente');
-
-  await resend.emails.send({
-    from: 'Veta Creativa <points@vetacreativalaser.es>',
-    to: email,
-    subject: '🔐 Recupera tu contraseña de Veta Creativa',
-    html: `<a href="${actionLink}">Restablecer contraseña</a>`
-  });
-
-  console.log('📨 Correo enviado');
-
-  return new Response(JSON.stringify({ success: true }), {
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Content-Type': 'application/json'
+    if (error || !data?.properties?.hashed_token) {
+      console.error('Error generando token:', error?.message);
+      return new Response(JSON.stringify({ error: 'No se pudo generar el enlace' }), {
+        status: 500,
+        headers: { 'Access-Control-Allow-Origin': '*' }
+      });
     }
-  });
-} catch (err) {
-  console.error('🔥 Error inesperado:', err);
-  return new Response(JSON.stringify({ error: 'Error interno' }), {
-    status: 500,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Content-Type': 'application/json'
-    }
-  });
-}
 
+    const token = data.properties.hashed_token;
+    const url = `https://vetacreativalaser.es/reset-password?token=${token}`;
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 30); // 30 min
+
+    // Guardar token en tabla personalizada
+    const { error: insertError } = await supabase
+      .from('password_reset_tokens')
+      .insert([{ token, email, used: false, expires_at: expiresAt.toISOString() }]);
+
+    if (insertError) {
+      console.error('Error guardando token:', insertError.message);
+      return new Response(JSON.stringify({ error: 'No se pudo guardar el token' }), {
+        status: 500,
+        headers: { 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+
+    // Enviar email personalizado
+    await resend.emails.send({
+      from: 'Veta Creativa <points@vetacreativalaser.es>',
+      to: email,
+      subject: '🔐 Recupera tu contraseña de Veta Creativa',
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 24px; background-color: #f9fafb;">
+          <div style="max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.05);">
+            <h2 style="color: #10b981;">Recuperación de contraseña</h2>
+            <p style="font-size: 16px; color: #333;">
+              Has solicitado restablecer tu contraseña. Haz clic en el botón de abajo para continuar.
+            </p>
+            <a href="${url}" style="display:inline-block; margin: 20px 0; padding: 12px 24px; background-color: #10b981; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">
+              Restablecer contraseña
+            </a>
+            <p style="font-size: 14px; color: #777;">
+              Si no solicitaste este cambio, puedes ignorar este mensaje.
+            </p>
+            <hr style="margin: 30px 0;" />
+            <p style="font-size: 12px; color: #aaa; text-align: center;">
+              No respondas a este correo. Para cualquier duda, escríbenos a 
+              <a href="mailto:vetacreativalaser@gmail.com" style="color: #10b981;">vetacreativalaser@gmail.com</a>.
+            </p>
+          </div>
+        </div>
+      `
+    });
+
+    return new Response(JSON.stringify({ success: true }), {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'application/json'
+      }
+    });
+
+  } catch (err) {
+    console.error('Error inesperado:', err);
+    return new Response(JSON.stringify({ error: 'Error interno' }), {
+      status: 500,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'application/json'
+      }
+    });
+  }
 });
