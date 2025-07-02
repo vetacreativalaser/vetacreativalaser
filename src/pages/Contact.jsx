@@ -164,8 +164,7 @@ const Contact = () => {
               <p className="text-green-700 text-sm mb-4">Contacta directamente para una respuesta más rápida y personalizada.</p>
               <Button 
                 onClick={handleWhatsAppClick}
-                variant="outline"
-                className="border-green-600 text-green-600 hover:bg-green-600 hover:text-white"
+                className="bg-green-600 text-white transform transition-transform duration-200 hover:scale-105 hover:bg-green-700"
               >
                 Chatear por WhatsApp
               </Button>
