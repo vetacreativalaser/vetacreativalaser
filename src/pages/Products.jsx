@@ -138,6 +138,7 @@ const Products = () => {
     <div className="w-full aspect-square bg-gray-100 overflow-hidden">
       <Link to={`/productos/${product.id}`}>
         <img
+          loading="lazy"
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           alt={product.image_alts?.[0] || product.name}
           src={(() => {
@@ -167,11 +168,11 @@ const Products = () => {
 
     {/* ZONA DE TEXTO CON HOVER COMPLETO */}
     <div className="transition-colors duration-300 group-hover:bg-gray-100 px-3 py-3">
-      <h3 className="text-md font-medium text-black text-left leading-snug">
+      <p className="text-md font-medium text-black text-left leading-snug">
         <Link to={`/productos/${product.id}`}>
           {product.name}
         </Link>
-      </h3>
+      </p>
       <p className="mt-1 text-sm text-left text-gray-500">
         {(() => {
           try {
