@@ -50,36 +50,39 @@ const Home = () => {
           </motion.header>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10">
-            {categories.map(({ id, filter, title = 'Sin categoría', description, image_url }, index) => (
-              <motion.article
+            {categories.map(({ id, title = 'Sin categoría', description, image_url }, index) => (
+              <motion.div
                 key={id}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.3 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="group cursor-pointer outline-none focus:ring-2 focus:ring-brown-700"
-                tabIndex={0}
-                role="link"
-                aria-label={`Ver productos de la categoría ${title}`}
-                onClick={() => window.location.href = `/productos?category_id=${id}`}
-                onKeyDown={(e) => e.key === 'Enter' && (window.location.href = `/productos?category_id=${id}`)}
               >
-                <div className="w-full aspect-square bg-gray-100 overflow-hidden">
-                  <img
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    src={image_url || '/fallback-category.jpg'}
-                    alt={`Imagen de la categoría ${title}`}
-                    loading="lazy"
-                    width="400"
-                    height="400"
-                  />
-                </div>
-                <div className="p-4 text-center">
-                  <h2 className="text-xl font-semibold text-black mb-1">{title}</h2>
-                  <p className="text-sm text-gray-600">{description}</p>
-                </div>
-              </motion.article>
+                <Link
+                  to={`/productos?category_id=${id}`}
+                  className="block group outline-none focus:ring-2 focus:ring-brown-700 rounded"
+                  aria-label={`Ver productos de la categoría ${title}`}
+                >
+                  <article className="cursor-pointer">
+                    <div className="w-full aspect-square bg-gray-100 overflow-hidden">
+                      <img
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        src={image_url || '/fallback-category.jpg'}
+                        alt={`Imagen de la categoría ${title}`}
+                        loading="lazy"
+                        width="400"
+                        height="400"
+                      />
+                    </div>
+                    <div className="p-4 text-center group-hover:bg-gray-100 transition-colors">
+                      <h2 className="text-xl font-semibold text-black mb-1">{title}</h2>
+                      <p className="text-sm text-gray-600">{description}</p>
+                    </div>
+                  </article>
+                </Link>
+              </motion.div>
             ))}
+
           </div>
         </div>
       </section>

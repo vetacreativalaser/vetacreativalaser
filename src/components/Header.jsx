@@ -85,6 +85,9 @@ const Header = () => {
                 size="icon"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className="hover:bg-transparent p-1"
+                aria-label="Icono abrir menu"
+                type="button"
+
               >
                 {isMobileMenuOpen ? (
                   <X className="h-7 w-7 text-gray-600 hover:text-black" strokeWidth={1.5}/>
@@ -121,13 +124,13 @@ const Header = () => {
 
               <div className="flex items-center space-x-2">
                 <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant="ghost" size="icon" onClick={toggleSearch} className="hover:bg-transparent p-1 search-trigger-button">
+                  <Button variant="ghost" size="icon" onClick={toggleSearch} className="hover:bg-transparent p-1 search-trigger-button" type="button" arialabel="Icono buscar">
                     <SearchIconPlain className="h-6 w-6 text-gray-600 hover:text-black" strokeWidth={2}/>
                   </Button>
                 </motion.div>
                 
                 <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant="ghost" size="icon" className="hover:bg-transparent p-1" onClick={handleProfileIconClick}>
+                  <Button variant="ghost" size="icon" className="hover:bg-transparent p-1" type="button" arialabel="Boton acceder a perfil" onClick={handleProfileIconClick}>
                     <User className="h-7 w-7 text-gray-600 hover:text-black" strokeWidth={1.5}/>
                   </Button>
                 </motion.div>
@@ -135,11 +138,11 @@ const Header = () => {
             </div>
             
             <div className="md:hidden flex items-center space-x-0.5">
-                <Button variant="ghost" size="icon" onClick={toggleSearch} className="hover:bg-transparent p-1 search-trigger-button">
+                <Button variant="ghost" size="icon" onClick={toggleSearch} className="hover:bg-transparent p-1 search-trigger-button" type="button" arialabel="Icono buscar">
                     <SearchIconPlain className="h-6 w-6 text-gray-600 hover:text-black" strokeWidth={2}/>
                 </Button>
                 
-                <Button variant="ghost" size="icon" className="hover:bg-transparent p-1" onClick={handleProfileIconClick}>
+                <Button variant="ghost" size="icon" className="hover:bg-transparent p-1" type="button" arialabel="Icono perfil" onClick={handleProfileIconClick}>
                   <User className="h-7 w-7 text-gray-600 hover:text-black" strokeWidth={1.5}/>
                 </Button>
             </div>
