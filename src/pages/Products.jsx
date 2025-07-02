@@ -138,7 +138,6 @@ const Products = () => {
     <div className="w-full aspect-square bg-gray-100 overflow-hidden">
       <Link to={`/productos/${product.id}`}>
         <img
-          loading="lazy"
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           alt={product.image_alts?.[0] || product.name}
           src={(() => {
