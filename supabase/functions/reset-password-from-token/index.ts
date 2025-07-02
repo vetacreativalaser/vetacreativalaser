@@ -1,5 +1,5 @@
 // @ts-ignore
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'; 
 // @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js';
 
@@ -16,7 +16,7 @@ serve(async (req) => {
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Headers': 'Content-Type'
       }
     });
   }
@@ -25,7 +25,10 @@ serve(async (req) => {
     const { token, newPassword } = await req.json();
 
     if (!token || !newPassword || newPassword.length < 6) {
-      return new Response(JSON.stringify({ error: 'Datos inválidos' }), { status: 400 });
+      return new Response(JSON.stringify({ error: 'Datos inválidos' }), {
+        status: 400,
+        headers: { 'Access-Control-Allow-Origin': '*' }
+      });
     }
 
     const { data: tokenData, error } = await supabase
@@ -35,39 +38,66 @@ serve(async (req) => {
       .single();
 
     if (error || !tokenData) {
-      return new Response(JSON.stringify({ error: 'Token inválido' }), { status: 400 });
+      return new Response(JSON.stringify({ error: 'Token inválido' }), {
+        status: 400,
+        headers: { 'Access-Control-Allow-Origin': '*' }
+      });
     }
 
     if (tokenData.used) {
-      return new Response(JSON.stringify({ error: 'Token ya usado' }), { status: 400 });
+      return new Response(JSON.stringify({ error: 'Token ya usado' }), {
+        status: 400,
+        headers: { 'Access-Control-Allow-Origin': '*' }
+      });
     }
 
     const now = new Date();
     const expiresAt = new Date(tokenData.expires_at);
     if (now > expiresAt) {
-      return new Response(JSON.stringify({ error: 'Token expirado' }), { status: 400 });
+      return new Response(JSON.stringify({ error: 'Token expirado' }), {
+        status: 400,
+        headers: { 'Access-Control-Allow-Origin': '*' }
+      });
     }
 
-    // Buscar al usuario por email
-    const { data: users } = await supabase.auth.admin.listUsers();
+    const { data: users, error: userError } = await supabase.auth.admin.listUsers();
+    if (userError || !users) {
+      return new Response(JSON.stringify({ error: 'Error al buscar usuarios' }), {
+        status: 500,
+        headers: { 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+
     const user = users.find((u) => u.email === tokenData.email);
-
     if (!user) {
-      return new Response(JSON.stringify({ error: 'Usuario no encontrado' }), { status: 404 });
+      return new Response(JSON.stringify({ error: 'Usuario no encontrado' }), {
+        status: 404,
+        headers: { 'Access-Control-Allow-Origin': '*' }
+      });
     }
 
-    const result = await supabase.auth.admin.updateUserById(user.id, {
+    const { error: updateError } = await supabase.auth.admin.updateUserById(user.id, {
       password: newPassword
     });
 
-    if (result.error) {
-      return new Response(JSON.stringify({ error: 'No se pudo actualizar la contraseña' }), { status: 500 });
+    if (updateError) {
+      return new Response(JSON.stringify({ error: 'No se pudo actualizar la contraseña' }), {
+        status: 500,
+        headers: { 'Access-Control-Allow-Origin': '*' }
+      });
     }
 
-    await supabase
+    const { error: markUsedError } = await supabase
       .from('password_reset_tokens')
       .update({ used: true })
       .eq('token', token);
+
+    if (markUsedError) {
+      return new Response(JSON.stringify({ error: 'No se pudo marcar el token como usado' }), {
+        status: 500,
+        headers: { 'Access-Control-Allow-Origin': '*' }
+      });
+    }
 
     return new Response(JSON.stringify({ success: true }), {
       headers: {
@@ -76,8 +106,8 @@ serve(async (req) => {
       }
     });
 
-  } catch (e) {
-    console.error(e);
+  } catch (err) {
+    console.error('❌ Error inesperado:', err);
     return new Response(JSON.stringify({ error: 'Error inesperado' }), {
       status: 500,
       headers: {
