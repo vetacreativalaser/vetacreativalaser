@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, User, LogOut, LayoutDashboard, Search as SearchIconPlain } from 'lucide-react';
+import { Menu, X, User, Search as SearchIconPlain } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -99,7 +99,7 @@ const Header = () => {
             
             <div className="flex-grow flex justify-center md:flex-grow-0 md:flex-none md:justify-start">
               <Link to="/" className="flex items-center">
-                <img src="https://storage.googleapis.com/hostinger-horizons-assets-prod/51fdf2fa-9931-48c7-9915-71ba907b019e/95791ac9cd7a505e89ef2dc007cf0fab.png" alt="Veta Creativa Laser Logo" className="h-20 w-auto" />
+                <img src="https://storage.googleapis.com/hostinger-horizons-assets-prod/51fdf2fa-9931-48c7-9915-71ba907b019e/95791ac9cd7a505e89ef2dc007cf0fab.png" alt="Veta Creativa Laser Logo" />
               </Link>
             </div>
 
@@ -124,13 +124,13 @@ const Header = () => {
 
               <div className="flex items-center space-x-2">
                 <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant="ghost" size="icon" onClick={toggleSearch} className="hover:bg-transparent p-1 search-trigger-button" type="button" arialabel="Icono buscar">
+                  <Button variant="ghost" size="icon" onClick={toggleSearch} className="hover:bg-transparent p-1 search-trigger-button" type="button" aria-label="Icono buscar">
                     <SearchIconPlain className="h-6 w-6 text-gray-600 hover:text-black" strokeWidth={2}/>
                   </Button>
                 </motion.div>
                 
                 <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                  <Button variant="ghost" size="icon" className="hover:bg-transparent p-1" type="button" arialabel="Boton acceder a perfil" onClick={handleProfileIconClick}>
+                  <Button variant="ghost" size="icon" className="hover:bg-transparent p-1" type="button" aria-label="Boton acceder a perfil" onClick={handleProfileIconClick}>
                     <User className="h-7 w-7 text-gray-600 hover:text-black" strokeWidth={1.5}/>
                   </Button>
                 </motion.div>
@@ -138,11 +138,11 @@ const Header = () => {
             </div>
             
             <div className="md:hidden flex items-center space-x-0.5">
-                <Button variant="ghost" size="icon" onClick={toggleSearch} className="hover:bg-transparent p-1 search-trigger-button" type="button" arialabel="Icono buscar">
+                <Button variant="ghost" size="icon" onClick={toggleSearch} className="hover:bg-transparent p-1 search-trigger-button" type="button" aria-label="Icono buscar">
                     <SearchIconPlain className="h-6 w-6 text-gray-600 hover:text-black" strokeWidth={2}/>
                 </Button>
                 
-                <Button variant="ghost" size="icon" className="hover:bg-transparent p-1" type="button" arialabel="Icono perfil" onClick={handleProfileIconClick}>
+                <Button variant="ghost" size="icon" className="hover:bg-transparent p-1" type="button" aria-label="Icono perfil" onClick={handleProfileIconClick}>
                   <User className="h-7 w-7 text-gray-600 hover:text-black" strokeWidth={1.5}/>
                 </Button>
             </div>
