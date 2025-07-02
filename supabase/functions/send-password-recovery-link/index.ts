@@ -34,7 +34,7 @@ serve(async (req) => {
         headers: { 'Access-Control-Allow-Origin': '*' }
       });
     }
-
+    
     // 1. Generar el enlace de recuperación
     const { data, error } = await supabase.auth.admin.generateLink({
       type: 'recovery',
@@ -44,15 +44,17 @@ serve(async (req) => {
       }
     });
 
-    if (error || !data?.action_link) {
-  console.error('Error generando el enlace:');
-  console.error('🔍 Error:', error);
-  console.error('📦 Data:', data);
-  return new Response(JSON.stringify({ error: 'No se pudo generar el enlace' }), {
-    status: 500,
-    headers: { 'Access-Control-Allow-Origin': '*' }
-  });
-}
+    const actionLink = data?.properties?.action_link;
+
+    if (error || !actionLink) {
+      console.error('Error generando el enlace:', error);
+      console.error('Data:', data);
+      return new Response(JSON.stringify({ error: 'No se pudo generar el enlace' }), {
+        status: 500,
+        headers: { 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+
 
 
     // 2. Extraer el token del enlace generado
