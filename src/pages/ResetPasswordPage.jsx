@@ -14,7 +14,7 @@ const ResetPasswordPage = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const [tokenValid, setTokenValid] = useState(null); // null: checking, true: valid, false: invalid
+const [tokenValid, setTokenValid] = useState(null);
   const [token, setToken] = useState('');
 
   useEffect(() => {

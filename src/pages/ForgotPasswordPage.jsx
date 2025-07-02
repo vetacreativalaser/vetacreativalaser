@@ -53,43 +53,28 @@ const ForgotPasswordPage = () => {
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="new-password">Nueva contraseña</Label>
-                <Input
-                  id="new-password"
-                  name="newPassword"
-                  type="password"
-                  required
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="mt-1 border-gray-300 focus:border-black focus:ring-black"
-                  placeholder="Nueva contraseña"
-                  disabled={isLoading}
-                />
-              </div>
-              <div>
-                <Label htmlFor="confirm-password">Confirmar nueva contraseña</Label>
-                <Input
-                  id="confirm-password"
-                  name="confirmPassword"
-                  type="password"
-                  required
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="mt-1 border-gray-300 focus:border-black focus:ring-black"
-                  placeholder="Confirmar contraseña"
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
+  <div className="space-y-1">
+    <Label htmlFor="email">Correo electrónico</Label>
+    <Input
+      id="email"
+      name="email"
+      type="email"
+      required
+      value={email}
+      onChange={(e) => setEmail(e.target.value)}
+      className="mt-1 border-gray-300 focus:border-black focus:ring-black"
+      placeholder="tu.email@ejemplo.com"
+      disabled={isLoading}
+    />
+  </div>
 
-            <div>
-              <Button type="submit" className="w-full bg-black text-white hover:bg-gray-800" disabled={isLoading || tokenValid !== true}>
-                {isLoading ? 'Restableciendo...' : 'Restablecer Contraseña'}
-              </Button>
-            </div>
-          </form>
+  <div>
+    <Button type="submit" className="w-full bg-black text-white hover:bg-gray-800" disabled={isLoading}>
+      {isLoading ? 'Enviando...' : 'Enviar enlace de recuperación'}
+    </Button>
+  </div>
+</form>
+
         <div className="mt-4 text-center text-sm">
           <Link to="/auth" className="font-medium text-black hover:underline">
             Volver a Iniciar Sesión
