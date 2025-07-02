@@ -38,7 +38,7 @@ serve(async (req) => {
     const { data, error } = await supabase.auth.admin.generateLink({
       type: 'recovery',
       email,
-      options: { redirectTo: 'https://vetacreativalaser.es/reset-password' }
+      options: { redirectTo: `https://vetacreativalaser.es/reset-password` }
     });
 
     if (error || !data?.properties?.hashed_token) {
@@ -51,9 +51,9 @@ serve(async (req) => {
 
     const token = data.properties.hashed_token;
     const url = `https://vetacreativalaser.es/reset-password?token=${token}`;
-    const expiresAt = new Date(Date.now() + 1000 * 60 * 30); // 30 min
 
-    // Guardar token en tabla personalizada
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 30); // 30 minutos
+
     const { error: insertError } = await supabase
       .from('password_reset_tokens')
       .insert([{ token, email, used: false, expires_at: expiresAt.toISOString() }]);
@@ -66,7 +66,6 @@ serve(async (req) => {
       });
     }
 
-    // Enviar email personalizado
     await resend.emails.send({
       from: 'Veta Creativa <points@vetacreativalaser.es>',
       to: email,

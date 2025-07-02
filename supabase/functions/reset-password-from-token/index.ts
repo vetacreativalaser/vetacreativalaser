@@ -48,7 +48,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Token expirado' }), { status: 400 });
     }
 
-    // Busca al usuario por email
+    // Buscar al usuario por email
     const { data: users } = await supabase.auth.admin.listUsers();
     const user = users.find((u) => u.email === tokenData.email);
 
