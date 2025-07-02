@@ -70,9 +70,9 @@ const About = () => {
             className="lg:col-span-2 rounded-lg overflow-hidden border border-gray-200 shadow-md"
           >
             <img  
-              className="w-full h-auto object-cover" 
+              className="w-600 h-400 object-cover" 
               alt="Taller de Veta Creativa Laser"
-              src="https://dspsrnprvrpjrkicxiso.supabase.co/storage/v1/object/public/productos//about-background.JPG" 
+              src="https://dspsrnprvrpjrkicxiso.supabase.co/storage/v1/object/public/imgadmins//about-background.webp" 
             />
           </motion.div>
         </div>
@@ -86,7 +86,7 @@ const About = () => {
         >
           <div className="w-40 h-40 rounded-full overflow-hidden border-4 border-white shadow-md mx-auto">
             <img
-              src='https://dspsrnprvrpjrkicxiso.supabase.co/storage/v1/object/public/productos//Edicion%2010%20normal.jpg'
+              src='https://dspsrnprvrpjrkicxiso.supabase.co/storage/v1/object/public/imgadmins/perfil.webp'
               alt="Isaac Delfa"
               className="w-full h-full object-cover"
             />
