@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(if [ ! -d \"supabase/functions\" ])",
+      "Bash(then mkdir -p supabase/functions/create-checkout)",
+      "Bash(else mkdir -p supabase/functions/create-checkout)",
+      "Bash(fi:*)",
+      "Bash(tree:*)",
+      "Bash(dir:*)",
+      "Bash(cat:*)",
+      "Bash(mkdir:*)"
+    ]
+  }
+}

@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset 
+  xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 
+                      http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+
+  <!-- Página principal -->
+  <url>
+    <loc>https://vetacreativalaser.es/</loc>
+    <priority>1.0</priority>
+    <changefreq>daily</changefreq>
+  </url>
+
+  <!-- Productos -->
+  <url>
+    <loc>https://vetacreativalaser.es/productos</loc>
+    <priority>0.9</priority>
+    <changefreq>daily</changefreq>
+  </url>
+
+  <!-- Perfil de usuario -->
+  <url>
+    <loc>https://vetacreativalaser.es/perfil</loc>
+    <priority>0.5</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+
+  <!-- Favoritos -->
+  <url>
+    <loc>https://vetacreativalaser.es/favoritos</loc>
+    <priority>0.4</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+
+  <!-- Sobre nosotros -->
+  <url>
+    <loc>https://vetacreativalaser.es/sobre-nosotros</loc>
+    <priority>0.6</priority>
+    <changefreq>yearly</changefreq>
+  </url>
+
+  <!-- Contacto -->
+  <url>
+    <loc>https://vetacreativalaser.es/contacto</loc>
+    <priority>0.5</priority>
+    <changefreq>yearly</changefreq>
+  </url>
+
+  <!-- FAQ -->
+  <url>
+    <loc>https://vetacreativalaser.es/faq</loc>
+    <priority>0.5</priority>
+    <changefreq>yearly</changefreq>
+  </url>
+
+  <!-- Buscador -->
+  <url>
+    <loc>https://vetacreativalaser.es/buscar</loc>
+    <priority>0.3</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+
+  <!-- Registro/Login -->
+  <url>
+    <loc>https://vetacreativalaser.es/auth</loc>
+    <priority>0.3</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+
+  <!-- Recuperación contraseña -->
+  <url>
+    <loc>https://vetacreativalaser.es/forgot-password</loc>
+    <priority>0.3</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://vetacreativalaser.es/reset-password</loc>
+    <priority>0.3</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+
+  <!-- Legal -->
+  <url>
+    <loc>https://vetacreativalaser.es/terminos-y-condiciones</loc>
+    <priority>0.2</priority>
+    <changefreq>yearly</changefreq>
+  </url>
+  <url>
+    <loc>https://vetacreativalaser.es/politica-de-privacidad</loc>
+    <priority>0.2</priority>
+    <changefreq>yearly</changefreq>
+  </url>
+  <url>
+    <loc>https://vetacreativalaser.es/politica-de-cookies</loc>
+    <priority>0.2</priority>
+    <changefreq>yearly</changefreq>
+  </url>
+  <url>
+    <loc>https://vetacreativalaser.es/guias-de-compra</loc>
+    <priority>0.3</priority>
+    <changefreq>yearly</changefreq>
+  </url>
+
+</urlset>

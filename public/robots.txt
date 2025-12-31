@@ -1,0 +1,16 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /perfil
+Disallow: /favoritos
+Disallow: /reset-password
+Disallow: /forgot-password
+Disallow: /auth
+Disallow: /login
+Disallow: /registro
+Disallow: /lista-de-deseos
+Disallow: /admin/dashboard
+Disallow: /admin/crear-producto
+
+Allow: /
+
+Sitemap: https://vetacreativalaser.es/sitemap.xml
