@@ -57,12 +57,35 @@ function generateItemId(productId, customization = {}, selectedReason = null) {
  * @property {Function} getCartTotal - Selector para totales calculados
  */
 
+/**
+ * Valida que un priceConfig sea válido
+ */
+function isValidPriceConfig(priceConfig) {
+  return priceConfig && typeof priceConfig === 'object' && priceConfig.type;
+}
+
 export const useCartStore = create(
   persist(
     (set, get) => ({
       // ========== STATE ==========
       items: [],
       isOpen: false,
+
+      // ========== INITIALIZATION ==========
+      /**
+       * Limpia items corruptos del carrito al inicializar
+       */
+      cleanupInvalidItems: () => {
+        set(state => ({
+          items: state.items.filter(item => {
+            const isValid = isValidPriceConfig(item.priceConfig);
+            if (!isValid) {
+              console.warn('Removing invalid cart item:', item);
+            }
+            return isValid;
+          })
+        }));
+      },
 
       // ========== ACTIONS ==========
 
@@ -86,10 +109,25 @@ export const useCartStore = create(
           return;
         }
 
-        if (!product.price || !product.price.type) {
-          console.error('Product missing price configuration:', product);
+        // Parsear price si es string
+        let priceConfig = product.price;
+        console.log('🔍 addItem - product.price tipo:', typeof product.price, 'valor:', product.price);
+
+        if (typeof priceConfig === 'string') {
+          try {
+            priceConfig = JSON.parse(priceConfig);
+            console.log('✅ addItem - price parseado correctamente:', priceConfig);
+          } catch (e) {
+            console.error('❌ addItem - Error parsing price config:', e);
+          }
+        }
+
+        if (!priceConfig || !priceConfig.type) {
+          console.error('❌ addItem - Product missing price configuration:', product);
           return;
         }
+
+        console.log('✅ addItem - priceConfig validado:', priceConfig);
 
         const itemId = generateItemId(product.id, customization, selectedReason);
         const currentItems = get().items;
@@ -113,7 +151,7 @@ export const useCartStore = create(
               quantity,
               customization: customization || {},
               selectedReason,
-              priceConfig: product.price, // Copia del JSONB para referencia
+              priceConfig: priceConfig, // Copia parseada del JSONB para referencia
               addedAt: new Date().toISOString()
             };
             updatedItems = [...state.items, newItem];
@@ -151,6 +189,39 @@ export const useCartStore = create(
           items: state.items.map(item =>
             item.itemId === itemId
               ? { ...item, quantity: newQuantity }
+              : item
+          )
+        }));
+      },
+
+      /**
+       * Actualiza el priceConfig de un item (para refrescar precios desde DB)
+       *
+       * @param {string} itemId - ID único del item
+       * @param {Object} newPriceConfig - Nueva configuración de precio
+       */
+      updateItemPrice: (itemId, newPriceConfig) => {
+        // Parsear newPriceConfig si es string
+        let parsedPriceConfig = newPriceConfig;
+        if (typeof newPriceConfig === 'string') {
+          try {
+            parsedPriceConfig = JSON.parse(newPriceConfig);
+          } catch (e) {
+            console.error('Error parsing newPriceConfig:', e);
+            return; // No actualizar si el precio es inválido
+          }
+        }
+
+        // Validar que tenga el campo 'type'
+        if (!parsedPriceConfig || !parsedPriceConfig.type) {
+          console.error('updateItemPrice: newPriceConfig missing type field', newPriceConfig);
+          return; // No actualizar si el precio es inválido
+        }
+
+        set(state => ({
+          items: state.items.map(item =>
+            item.itemId === itemId
+              ? { ...item, priceConfig: parsedPriceConfig }
               : item
           )
         }));

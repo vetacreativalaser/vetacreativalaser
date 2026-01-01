@@ -9,7 +9,10 @@
       "Bash(tree:*)",
       "Bash(dir:*)",
       "Bash(cat:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(supabase functions deploy:*)",
+      "Bash(supabase functions logs:*)",
+      "Bash(findstr:*)"
     ]
   }
 }

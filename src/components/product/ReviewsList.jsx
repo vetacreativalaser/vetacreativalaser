@@ -82,33 +82,6 @@ const ReviewsList = ({ reviews, user, refreshReviews }) => {
 
       await supabase.from('reviews').delete().eq('id', review.id);
 
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('points, name')
-        .eq('id', user.id)
-        .single();
-
-      if (!profileError && profile) {
-        const updatedPoints = Math.max(0, profile.points - 5);
-        await supabase.from('profiles').update({ points: updatedPoints }).eq('id', user.id);
-
-        const { data: { session } } = await supabase.auth.getSession();
-
-        await fetch('https://dspsrnprvrpjrkicxiso.functions.supabase.co/send-points-update', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session?.access_token}`
-          },
-          body: JSON.stringify({
-            email: user.email,
-            name: profile.name,
-            points: updatedPoints,
-            changeType: 'lose'
-          })
-        });
-      }
-
       refreshReviews();
     } catch (error) {
       console.error('Error al eliminar reseña:', error);

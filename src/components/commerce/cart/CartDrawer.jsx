@@ -11,9 +11,9 @@ import { useCartStore, useCart } from '@/store/useCartStore';
 import CartItem from './CartItem';
 import { formatPrice } from '@/lib/priceUtils';
 import { useEffect, useState } from 'react';
-import { getStripe } from '@/lib/stripe';
 import { supabase } from '@/lib/supabaseClient';
 import { toast } from '@/components/ui/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 /**
  * CartDrawer Component
@@ -22,9 +22,48 @@ import { toast } from '@/components/ui/use-toast';
  * Conectado automáticamente al store de Zustand
  */
 export default function CartDrawer() {
-  const { items, isOpen, closeCart, updateQuantity, removeItem, clearCart } = useCartStore();
+  const navigate = useNavigate();
+  const { items, isOpen, closeCart, updateQuantity, removeItem, clearCart, updateItemPrice, cleanupInvalidItems } = useCartStore();
   const { total } = useCart();
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
+  const [pricesUpdated, setPricesUpdated] = useState(false);
+
+  // Limpiar items inválidos al abrir el carrito
+  useEffect(() => {
+    if (isOpen && cleanupInvalidItems) {
+      cleanupInvalidItems();
+    }
+  }, [isOpen, cleanupInvalidItems]);
+
+  // Actualizar precios desde la BD cuando se abre el carrito
+  useEffect(() => {
+    const updatePrices = async () => {
+      if (isOpen && items.length > 0 && !pricesUpdated) {
+        try {
+          const productIds = items.map(item => item.product.id);
+          const { data: products, error } = await supabase
+            .from('products')
+            .select('id, price')
+            .in('id', productIds);
+
+          if (!error && products) {
+            // Actualizar el priceConfig de cada item en el carrito
+            products.forEach(product => {
+              const cartItem = items.find(item => item.product.id === product.id);
+              if (cartItem && updateItemPrice) {
+                updateItemPrice(cartItem.itemId, product.price);
+              }
+            });
+            setPricesUpdated(true);
+          }
+        } catch (error) {
+          console.error('Error al actualizar precios:', error);
+        }
+      }
+    };
+
+    updatePrices();
+  }, [isOpen, items, pricesUpdated, updateItemPrice]);
 
   // Prevenir scroll del body cuando el drawer está abierto
   // Y compensar el ancho del scrollbar para evitar layout shift
@@ -81,13 +120,7 @@ export default function CartDrawer() {
     setIsProcessingCheckout(true);
 
     try {
-      // 1. Obtener instancia de Stripe
-      const stripe = await getStripe();
-      if (!stripe) {
-        throw new Error('No se pudo cargar Stripe. Verifica la configuración.');
-      }
-
-      // 2. Preparar datos del carrito para el checkout
+      // 1. Preparar datos del carrito para el checkout
       const cartItems = items.map(item => ({
         productId: item.product.id,
         productName: item.product.name,
@@ -97,7 +130,7 @@ export default function CartDrawer() {
         selectedReason: item.selectedReason
       }));
 
-      // 3. Llamar a la Edge Function de Supabase para crear la sesión de Stripe
+      // 2. Llamar a la Edge Function de Supabase para crear la sesión de Stripe
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { cartItems }
       });
@@ -107,18 +140,18 @@ export default function CartDrawer() {
         throw new Error(error.message || 'Error al crear la sesión de pago');
       }
 
-      if (!data || !data.sessionId) {
-        throw new Error('No se recibió una sesión de pago válida');
+      if (!data || !data.url) {
+        console.error('Respuesta de la función:', data);
+        // Mostrar el error específico si viene en data
+        if (data && data.error) {
+          throw new Error(`Error del servidor: ${data.error}`);
+        }
+        throw new Error('No se recibió una URL de pago válida');
       }
 
-      // 4. Redirigir al usuario a Stripe Checkout
-      const { error: redirectError } = await stripe.redirectToCheckout({
-        sessionId: data.sessionId
-      });
-
-      if (redirectError) {
-        throw new Error(redirectError.message);
-      }
+      // 3. Redirigir al usuario a Stripe Checkout usando la URL completa
+      console.log('Redirigiendo a Stripe Checkout:', data.url);
+      window.location.href = data.url;
 
       // Si todo va bien, el usuario será redirigido a Stripe
       // No cerramos el carrito aquí porque la página se redirigirá
@@ -222,19 +255,32 @@ export default function CartDrawer() {
               </p>
             </div>
 
-            {/* Botón Tramitar Pedido */}
+            {/* Botón Ver Carrito Completo */}
             <Button
               size="lg"
+              className="w-full"
+              onClick={() => {
+                closeCart();
+                navigate('/carrito');
+              }}
+            >
+              Ver Carrito Completo
+            </Button>
+
+            {/* Botón Tramitar Pedido Rápido */}
+            <Button
+              size="lg"
+              variant="outline"
               className="w-full"
               onClick={handleCheckout}
               disabled={isProcessingCheckout}
             >
-              {isProcessingCheckout ? 'Procesando...' : 'Tramitar Pedido'}
+              {isProcessingCheckout ? 'Procesando...' : 'Tramitar Pedido Rápido'}
             </Button>
 
             {/* Botón Seguir Comprando */}
             <Button
-              variant="outline"
+              variant="ghost"
               className="w-full"
               onClick={closeCart}
             >

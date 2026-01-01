@@ -57,39 +57,6 @@ const ReviewForm = ({ user, productId, newReview, setNewReview, refreshReviews }
 
       if (insertError) throw insertError;
 
-      // Añadir 5 puntos al perfil
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('points, name')
-        .eq('id', user.id)
-        .single();
-
-      if (!profileError && profile) {
-        const updatedPoints = (profile.points || 0) + 5;
-        await supabase
-          .from('profiles')
-          .update({ points: updatedPoints })
-          .eq('id', user.id);
-
-        // Enviar correo por puntos ganados
-       const { data: { session } } = await supabase.auth.getSession();
-
-        await fetch('https://dspsrnprvrpjrkicxiso.functions.supabase.co/send-points-update', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session?.access_token}`
-          },
-          body: JSON.stringify({
-            email: user.email,
-            name: profile.name,
-            points: updatedPoints,
-            changeType: 'gain' // o 'lose'
-          })
-        });
-
-      }
-
       setNewReview({ comment: '', rating: 0 });
       setSelectedImages([]);
       refreshReviews();

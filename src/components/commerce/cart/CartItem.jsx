@@ -21,6 +21,12 @@ import { formatPrice, calculateItemTotal } from '@/lib/priceUtils';
 export default function CartItem({ item, onUpdateQuantity, onRemove }) {
   const { itemId, product, quantity, customization, selectedReason, priceConfig } = item;
 
+  // Validar priceConfig antes de calcular
+  if (!priceConfig || !priceConfig.type) {
+    console.error('Invalid priceConfig for cart item:', item);
+    return null; // No renderizar item inválido
+  }
+
   // Calcular precio del item
   const itemTotal = calculateItemTotal(priceConfig, quantity, selectedReason);
 

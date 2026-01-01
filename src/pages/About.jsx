@@ -93,7 +93,7 @@ const About = () => {
           </div>          
           <h2 className="text-3xl font-semibold mb-2 mt-6">Isaac Delfa Medina</h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Soy un joven emprendedor de 15 años. Desde el diseño hasta el empaquetado, cada paso en Veta Creativa Laser lleva mi sello personal.
+            Soy un joven emprendedor de 16 años. Desde el diseño hasta el empaquetado, cada paso en Veta Creativa Laser lleva mi sello personal.
             Este proyecto es la fusión entre mi creatividad, mis ganas de aprender y mi deseo de ofrecer calidad excepcional.
           </p>
         </motion.div>

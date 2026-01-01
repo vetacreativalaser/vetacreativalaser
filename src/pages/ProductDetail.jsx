@@ -9,7 +9,7 @@ import { supabase } from '@/lib/supabaseClient';
 import ProductImages from '@/components/product/ProductImages';
 import ReviewForm from '@/components/product/ReviewForm';
 import ReviewsList from '@/components/product/ReviewsList';
-import EditProductDialog from '@/components/product/EditProductDialog';
+import ProductForm from '@/components/admin/products/ProductForm';
 import ProductCustomizer from '@/components/commerce/product/ProductCustomizer';
 import { useCartStore } from '@/store/useCartStore';
 import { calculateUnitPrice, formatPrice, getTierInfo, normalizePriceConfig } from '@/lib/priceUtils';
@@ -74,6 +74,16 @@ const ProductDetail = () => {
         specifications: typeof currentProduct.specifications === 'string' ? JSON.parse(currentProduct.specifications) : currentProduct.specifications,
         price: typeof currentProduct.price === 'string' ? JSON.parse(currentProduct.price) : currentProduct.price
       };
+
+      // DEBUG: Ver el estado del producto
+      console.log('🛒 DEBUG ProductDetail:', {
+        product_id: fixedProduct.id,
+        product_name: fixedProduct.name,
+        purchase_mode: fixedProduct.purchase_mode,
+        stripe_product_id: fixedProduct.stripe_product_id,
+        price_type: fixedProduct.price?.type,
+      });
+
       setProduct(fixedProduct);
       await fetchReviews(fixedProduct.id);
 
@@ -115,7 +125,16 @@ const ProductDetail = () => {
 
   // Handler para añadir al carrito
   const handleAddToCart = () => {
-    if (!product.stripe_enabled) {
+    console.log('🛒 handleAddToCart llamado:', {
+      purchase_mode: product.purchase_mode,
+      isCustomizationValid,
+      quantity,
+      customValues,
+      selectedReason,
+    });
+
+    if (product.purchase_mode !== 'standard') {
+      console.warn('❌ Purchase mode no es standard:', product.purchase_mode);
       toast({
         title: 'Producto no disponible',
         description: 'Este producto aún no está habilitado para compra online.',
@@ -125,6 +144,7 @@ const ProductDetail = () => {
     }
 
     if (!isCustomizationValid) {
+      console.warn('❌ Personalización inválida');
       toast({
         title: 'Completa la personalización',
         description: 'Por favor, completa todos los campos obligatorios.',
@@ -134,6 +154,7 @@ const ProductDetail = () => {
     }
 
     try {
+      console.log('✅ Añadiendo al carrito...');
       addItem(product, quantity, customValues, selectedReason);
       toast({
         title: '¡Añadido al carrito!',
@@ -141,7 +162,7 @@ const ProductDetail = () => {
       });
       openCart(); // Abrir el drawer automáticamente
     } catch (error) {
-      console.error('Error adding to cart:', error);
+      console.error('❌ Error adding to cart:', error);
       toast({
         title: 'Error',
         description: 'No se pudo añadir el producto al carrito.',
@@ -150,20 +171,53 @@ const ProductDetail = () => {
     }
   };
 
-  // Calcular precio dinámico usando priceUtils
+  // Calcular extras de personalización (mismo patrón que create-checkout Edge Function)
+  const calculateCustomizationExtras = (customization) => {
+    let extrasTotal = 0;
+
+    for (const [key, value] of Object.entries(customization)) {
+      if (typeof value === 'string') {
+        // Buscar patrones como "(+2€)", "(+2.5€)", "(+2)", etc.
+        const extraMatch = value.match(/\(\+(\d+(?:\.\d+)?)\s*€?\)/);
+        if (extraMatch) {
+          const extraAmount = parseFloat(extraMatch[1]);
+          extrasTotal += extraAmount;
+        }
+      }
+    }
+
+    return extrasTotal;
+  };
+
+  // Calcular precio dinámico usando priceUtils + extras de personalización
   const calculateCurrentPrice = () => {
     if (!price || !price.type) return null;
 
     // Para byReason: Si no hay motivo, usar el precio base
     if (price.type === 'byReason' && !selectedReason) {
       const basePrice = parseFloat(price.base) || 0;
-      return { unitPrice: basePrice, total: basePrice * quantity };
+      const extrasTotal = calculateCustomizationExtras(customValues);
+      const unitPriceWithExtras = basePrice + extrasTotal;
+      return {
+        unitPrice: basePrice,
+        extrasTotal,
+        unitPriceWithExtras,
+        total: unitPriceWithExtras * quantity
+      };
     }
 
     try {
-      const unitPrice = calculateUnitPrice(price, quantity, selectedReason);
-      const total = unitPrice * quantity;
-      return { unitPrice, total };
+      const baseUnitPrice = calculateUnitPrice(price, quantity, selectedReason);
+      const extrasTotal = calculateCustomizationExtras(customValues);
+      const unitPriceWithExtras = baseUnitPrice + extrasTotal;
+      const total = unitPriceWithExtras * quantity;
+
+      return {
+        unitPrice: baseUnitPrice,
+        extrasTotal,
+        unitPriceWithExtras,
+        total
+      };
     } catch (error) {
       // Error en cálculo de precio (datos incorrectos en DB)
       // Los warnings ya se muestran en priceUtils.js
@@ -178,9 +232,23 @@ const ProductDetail = () => {
     if (!price || !price.type) return <p className="text-gray-500">Precio variable</p>;
 
     if (price.type === 'fixed') {
+      const basePrice = parseFloat(price.value) || 0;
+      const extrasTotal = calculateCustomizationExtras(customValues);
+      const finalPrice = basePrice + extrasTotal;
+
       return (
-        <div>
-          <p className="text-3xl font-bold">{formatPrice(price.value)}</p>
+        <div className="space-y-2">
+          <div className="flex items-baseline gap-2">
+            <p className="text-3xl font-bold">{formatPrice(finalPrice)}</p>
+            {extrasTotal > 0 && (
+              <span className="text-sm text-muted-foreground line-through">{formatPrice(basePrice)}</span>
+            )}
+          </div>
+          {extrasTotal > 0 && (
+            <div className="flex items-center gap-2 text-sm bg-blue-50 text-blue-700 px-3 py-2 rounded-md">
+              <span>Incluye extras de personalización: +{formatPrice(extrasTotal)}</span>
+            </div>
+          )}
         </div>
       );
     }
@@ -188,10 +256,23 @@ const ProductDetail = () => {
     if (price.type === 'byQuantity') {
       const tierInfo = getTierInfo(price, quantity);
       const normalizedPrice = normalizePriceConfig(price);
+      const extrasTotal = calculateCustomizationExtras(customValues);
+      const finalUnitPrice = tierInfo.currentPrice + extrasTotal;
 
       return (
         <div className="space-y-2">
-          <p className="text-3xl font-bold">{formatPrice(tierInfo.currentPrice)}<span className="text-base font-normal text-muted-foreground">/unidad</span></p>
+          <div className="flex items-baseline gap-2">
+            <p className="text-3xl font-bold">{formatPrice(finalUnitPrice)}<span className="text-base font-normal text-muted-foreground">/unidad</span></p>
+            {extrasTotal > 0 && (
+              <span className="text-sm text-muted-foreground line-through">{formatPrice(tierInfo.currentPrice)}/ud</span>
+            )}
+          </div>
+
+          {extrasTotal > 0 && (
+            <div className="flex items-center gap-2 text-sm bg-blue-50 text-blue-700 px-3 py-2 rounded-md">
+              <span>Incluye extras de personalización: +{formatPrice(extrasTotal)}/unidad</span>
+            </div>
+          )}
 
           {/* Mostrar próximo descuento */}
           {tierInfo.nextTier && (
@@ -233,13 +314,26 @@ const ProductDetail = () => {
     if (price.type === 'byReason') {
       // Usar el base price (siempre debe existir en formato antiguo)
       const basePrice = parseFloat(price.base) || 0;
+      const extrasTotal = calculateCustomizationExtras(customValues);
 
       return (
         <div className="space-y-2">
           {selectedReason ? (
-            <p className="text-3xl font-bold">{formatPrice(calculateUnitPrice(price, quantity, selectedReason))}</p>
+            <>
+              <div className="flex items-baseline gap-2">
+                <p className="text-3xl font-bold">{formatPrice(calculateUnitPrice(price, quantity, selectedReason) + extrasTotal)}</p>
+                {extrasTotal > 0 && (
+                  <span className="text-sm text-muted-foreground line-through">{formatPrice(calculateUnitPrice(price, quantity, selectedReason))}</span>
+                )}
+              </div>
+              {extrasTotal > 0 && (
+                <div className="flex items-center gap-2 text-sm bg-blue-50 text-blue-700 px-3 py-2 rounded-md">
+                  <span>Incluye extras de personalización: +{formatPrice(extrasTotal)}</span>
+                </div>
+              )}
+            </>
           ) : (
-            <p className="text-3xl font-bold text-muted-foreground">Desde {formatPrice(basePrice)}</p>
+            <p className="text-3xl font-bold text-muted-foreground">Desde {formatPrice(basePrice + extrasTotal)}</p>
           )}
           <ul className="text-sm space-y-1">
             {price.reasons?.map((r) => {
@@ -294,7 +388,19 @@ const ProductDetail = () => {
             </div>
           </div>
 
-          <EditProductDialog open={isEditOpen} onOpenChange={setIsEditOpen} product={product} onUpdated={() => window.location.reload()} />
+          <ProductForm open={isEditOpen} onOpenChange={setIsEditOpen} product={product} onSaved={() => window.location.reload()} />
+
+          {/* Alerta de producto inactivo/borrador */}
+          {product.status !== 'active' && (
+            <div className="mb-6 p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded">
+              <div className="flex items-center gap-2">
+                <span className="text-yellow-700 font-semibold">⚠️ Este producto está oculto (Borrador)</span>
+              </div>
+              <p className="text-sm text-yellow-600 mt-1">
+                Solo visible para ti. Los clientes no pueden ver este producto en la tienda.
+              </p>
+            </div>
+          )}
 
           {/* Precio dinámico */}
           <div className="mb-6">
@@ -304,14 +410,16 @@ const ProductDetail = () => {
           {/* Selector de motivo (solo para byReason) */}
           {price?.type === 'byReason' && (
             <div className="mb-6 space-y-2">
-              <Label htmlFor="reason-select">Motivo de compra <span className="text-destructive">*</span></Label>
+              <Label htmlFor="reason-select">
+                {price.selectorLabel || 'Selecciona una opción'} <span className="text-destructive">*</span>
+              </Label>
               <select
                 id="reason-select"
                 value={selectedReason || ''}
                 onChange={(e) => setSelectedReason(e.target.value || null)}
                 className="w-full px-3 py-2 border rounded-md"
               >
-                <option value="" key="default-option">Selecciona un motivo</option>
+                <option value="" key="default-option">{price.selectorLabel || 'Selecciona una opción'}</option>
                 {price.reasons?.map((r) => {
                   // Calcular precio normalizado (base + increment si existe)
                   const displayPrice = r.price
@@ -332,15 +440,17 @@ const ProductDetail = () => {
             </div>
           )}
 
-          {/* ProductCustomizer - Motor de personalización */}
-          <ProductCustomizer
-            customFields={product.custom_fields || []}
-            values={customValues}
-            onValuesChange={(values, isValid) => {
-              setCustomValues(values);
-              setIsCustomizationValid(isValid);
-            }}
-          />
+          {/* ProductCustomizer - Motor de personalización (oculto en byReason) */}
+          {price?.type !== 'byReason' && (
+            <ProductCustomizer
+              customFields={product.custom_fields || []}
+              values={customValues}
+              onValuesChange={(values, isValid) => {
+                setCustomValues(values);
+                setIsCustomizationValid(isValid);
+              }}
+            />
+          )}
 
           {/* Selector de cantidad */}
           <div className="mb-6 space-y-2">
@@ -382,22 +492,57 @@ const ProductDetail = () => {
             </div>
           </div>
 
-          {/* Botón Añadir al Carrito */}
-          <Button
-            size="lg"
-            className="w-full mb-6"
-            onClick={handleAddToCart}
-            disabled={
-              !product.stripe_enabled ||
-              !isCustomizationValid ||
-              (price?.type === 'byReason' && !selectedReason)
-            }
-          >
-            <ShoppingCart className="w-5 h-5 mr-2" />
-            {!product.stripe_enabled
-              ? 'No disponible para compra online'
-              : 'Añadir al carrito'}
-          </Button>
+          {/* Mensaje "Cómo Comprar" (solo si NO es standard) */}
+          {product.purchase_mode !== 'standard' && (
+            <div className="mb-4 p-4 bg-gray-50 rounded-md text-sm">
+              <h3 className="font-semibold mb-2">Cómo comprar este producto</h3>
+              <p>¡Gracias por tu interés! Este producto no se puede comprar directamente en la web debido a la cantidad de personalizaciones disponibles. Es mejor que hablemos y una vez concretada la personalización te mandemos el enlace de pago o quedameos localmente para entregartelo.</p>
+              <ol className="list-decimal pl-5 mt-2 space-y-1">
+                <li>Contacta con nosotros a través de WhatsApp o email.</li>
+                <li>Indícanos el producto que te interesa y cualquier personalización.</li>
+                <li>Te confirmaremos los detalles y el precio final.</li>
+                <li>El pago se realiza de forma segura por Bizum, efectivo, enlace de producto, enlace de pago...Somos flexibles</li>
+              </ol>
+              <p className="mt-2 italic text-xs text-gray-500">¡Soy una persona fiable! Puedes comprobar las reseñas de otros clientes.</p>
+            </div>
+          )}
+
+          {/* Botón Añadir al Carrito / Contactar */}
+          {product.purchase_mode === 'standard' ? (
+            <Button
+              size="lg"
+              className="w-full mb-6"
+              onClick={handleAddToCart}
+              disabled={
+                !isCustomizationValid ||
+                (price?.type === 'byReason' && !selectedReason)
+              }
+            >
+              <ShoppingCart className="w-5 h-5 mr-2" />
+              Añadir al carrito
+            </Button>
+          ) : (
+            <Button
+              size="lg"
+              className="w-full mb-6 bg-green-600 hover:bg-green-700"
+              onClick={() => {
+                const message = `Hola! Estoy interesado en el producto: ${product.name}${
+                  selectedCustomization && Object.keys(selectedCustomization).length > 0
+                    ? `\n\nPersonalización:\n${Object.entries(selectedCustomization)
+                        .map(([key, value]) => `- ${key}: ${value}`)
+                        .join('\n')}`
+                    : ''
+                }`;
+                const whatsappUrl = `https://wa.me/642571133?text=${encodeURIComponent(message)}`;
+                window.open(whatsappUrl, '_blank');
+              }}
+            >
+              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+              </svg>
+              Contacta antes de comprar
+            </Button>
+          )}
 
           {/* Descripción y especificaciones */}
           <div className="text-justify">
@@ -415,20 +560,6 @@ const ProductDetail = () => {
               </>
             )}
 
-            {/* Mensaje de proceso de compra (solo si no está habilitado Stripe) */}
-            {!product.stripe_enabled && (
-              <div className="mt-6 p-4 bg-gray-50 rounded-md text-sm">
-                <h3 className="font-semibold mb-2">Cómo Comprar</h3>
-                <p>¡Gracias por tu interés! Al ser una empresa pequeña y artesanal, gestionamos los pedidos de forma personalizada.</p>
-                <ol className="list-decimal pl-5 mt-2 space-y-1">
-                  <li>Contacta con nosotros a través de WhatsApp o email.</li>
-                  <li>Indícanos el producto que te interesa y cualquier personalización.</li>
-                  <li>Te confirmaremos los detalles y el precio final.</li>
-                  <li>El pago se realiza de forma segura por Bizum o transferencia.</li>
-                </ol>
-                <p className="mt-2 italic text-xs text-gray-500">¡Soy una persona fiable! Puedes comprobar las reseñas de otros clientes.</p>
-              </div>
-            )}
           </div>
         </div>
       </div>

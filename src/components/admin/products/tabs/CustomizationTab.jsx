@@ -11,7 +11,8 @@ import {
   ListOrdered,
   FileImage,
   ToggleLeft,
-  Euro
+  Euro,
+  Package
 } from 'lucide-react';
 
 /**
@@ -37,6 +38,32 @@ import {
 const CustomizationTab = ({ formData, updateField }) => {
   const [expandedField, setExpandedField] = useState(null);
 
+  // Helper: Asegurar que custom_fields sea siempre un array
+  const getCustomFields = () => {
+    if (!formData.custom_fields) {
+      return [];
+    }
+    if (Array.isArray(formData.custom_fields)) {
+      return formData.custom_fields;
+    }
+    // Si es un string, intentar parsearlo (fix para datos guardados como string en BD)
+    if (typeof formData.custom_fields === 'string') {
+      try {
+        const parsed = JSON.parse(formData.custom_fields);
+        if (Array.isArray(parsed)) {
+          return parsed;
+        }
+      } catch (e) {
+        console.error('❌ Error al parsear custom_fields:', e);
+      }
+    }
+    // Cualquier otro caso: retornar array vacío
+    console.error('❌ CustomizationTab: custom_fields tiene formato inválido');
+    return [];
+  };
+
+  const customFields = getCustomFields();
+
   // Añadir nuevo campo
   const addField = () => {
     const newField = {
@@ -49,13 +76,13 @@ const CustomizationTab = ({ formData, updateField }) => {
       options: [] // Solo para select
     };
 
-    updateField('custom_fields', [...(formData.custom_fields || []), newField]);
+    updateField('custom_fields', [...customFields, newField]);
     setExpandedField(newField.id);
   };
 
   // Actualizar campo específico
   const updateCustomField = (fieldId, property, value) => {
-    const updatedFields = formData.custom_fields.map(field =>
+    const updatedFields = customFields.map(field =>
       field.id === fieldId
         ? { ...field, [property]: value }
         : field
@@ -66,7 +93,7 @@ const CustomizationTab = ({ formData, updateField }) => {
 
   // Eliminar campo
   const removeField = (fieldId) => {
-    updateField('custom_fields', formData.custom_fields.filter(f => f.id !== fieldId));
+    updateField('custom_fields', customFields.filter(f => f.id !== fieldId));
     if (expandedField === fieldId) {
       setExpandedField(null);
     }
@@ -75,22 +102,22 @@ const CustomizationTab = ({ formData, updateField }) => {
   // Mover campo arriba
   const moveFieldUp = (index) => {
     if (index === 0) return;
-    const fields = [...formData.custom_fields];
+    const fields = [...customFields];
     [fields[index - 1], fields[index]] = [fields[index], fields[index - 1]];
     updateField('custom_fields', fields);
   };
 
   // Mover campo abajo
   const moveFieldDown = (index) => {
-    if (index === formData.custom_fields.length - 1) return;
-    const fields = [...formData.custom_fields];
+    if (index === customFields.length - 1) return;
+    const fields = [...customFields];
     [fields[index], fields[index + 1]] = [fields[index + 1], fields[index]];
     updateField('custom_fields', fields);
   };
 
   // Añadir opción a campo select
   const addSelectOption = (fieldId) => {
-    const field = formData.custom_fields.find(f => f.id === fieldId);
+    const field = customFields.find(f => f.id === fieldId);
     if (!field) return;
 
     const newOptions = [...(field.options || []), ''];
@@ -99,20 +126,20 @@ const CustomizationTab = ({ formData, updateField }) => {
 
   // Actualizar opción de select
   const updateSelectOption = (fieldId, optionIndex, value) => {
-    const field = formData.custom_fields.find(f => f.id === fieldId);
+    const field = customFields.find(f => f.id === fieldId);
     if (!field) return;
 
-    const newOptions = [...field.options];
+    const newOptions = [...(field.options || [])];
     newOptions[optionIndex] = value;
     updateCustomField(fieldId, 'options', newOptions);
   };
 
   // Eliminar opción de select
   const removeSelectOption = (fieldId, optionIndex) => {
-    const field = formData.custom_fields.find(f => f.id === fieldId);
+    const field = customFields.find(f => f.id === fieldId);
     if (!field) return;
 
-    const newOptions = field.options.filter((_, i) => i !== optionIndex);
+    const newOptions = (field.options || []).filter((_, i) => i !== optionIndex);
     updateCustomField(fieldId, 'options', newOptions);
   };
 
@@ -156,9 +183,9 @@ const CustomizationTab = ({ formData, updateField }) => {
       </div>
 
       {/* Lista de campos */}
-      {formData.custom_fields && formData.custom_fields.length > 0 ? (
+      {customFields.length > 0 ? (
         <div className="space-y-3">
-          {formData.custom_fields.map((field, index) => {
+          {customFields.map((field, index) => {
             const FieldIcon = fieldTypeIcons[field.type] || Type;
             const isExpanded = expandedField === field.id;
 
@@ -327,7 +354,7 @@ const CustomizationTab = ({ formData, updateField }) => {
 
                         {field.options && field.options.length > 0 ? (
                           <div className="space-y-2">
-                            {field.options.map((option, optIndex) => (
+                            {(field.options || []).map((option, optIndex) => (
                               <div key={optIndex} className="flex items-center gap-2">
                                 <Input
                                   placeholder={`Opción ${optIndex + 1}`}
@@ -387,7 +414,7 @@ const CustomizationTab = ({ formData, updateField }) => {
             <span>👁️</span> Vista previa del formulario
           </h4>
           <div className="space-y-3 bg-white p-4 rounded border border-blue-100">
-            {formData.custom_fields.map((field) => (
+            {customFields.map((field) => (
               <div key={field.id} className="space-y-1">
                 <Label className="text-xs font-medium">
                   {field.label || 'Campo sin nombre'}

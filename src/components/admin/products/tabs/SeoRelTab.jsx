@@ -42,7 +42,7 @@ const SeoRelTab = ({ formData, updateField }) => {
     try {
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, sku')
+        .select('id, name, sku, images')
         .in('id', formData.related_products);
 
       if (error) throw error;
@@ -51,6 +51,23 @@ const SeoRelTab = ({ formData, updateField }) => {
     } catch (error) {
       console.error('Error loading selected products:', error);
     }
+  };
+
+  // Obtener URL de imagen de un producto (maneja ambos formatos)
+  const getProductImageUrl = (product) => {
+    if (!product) return null;
+
+    // Formato nuevo: images JSONB array
+    if (product.images && Array.isArray(product.images) && product.images.length > 0) {
+      return product.images[0].url;
+    }
+
+    // Formato antiguo: image_urls array
+    if (product.image_urls && Array.isArray(product.image_urls) && product.image_urls.length > 0) {
+      return product.image_urls[0];
+    }
+
+    return null;
   };
 
   // Buscar productos
@@ -65,8 +82,8 @@ const SeoRelTab = ({ formData, updateField }) => {
     try {
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, sku')
-        .or(`name.ilike.%${searchQuery}%,sku.ilike.%${searchQuery}%`)
+        .select('id, name, sku, images')
+        .ilike('name', `%${searchQuery}%`)
         .limit(10);
 
       if (error) throw error;
@@ -267,26 +284,47 @@ const SeoRelTab = ({ formData, updateField }) => {
           {/* Resultados de búsqueda */}
           {searchResults.length > 0 && (
             <div className="border border-gray-200 rounded-lg divide-y divide-gray-200 max-h-64 overflow-y-auto">
-              {searchResults.map((product) => (
-                <div
-                  key={product.id}
-                  className="p-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{product.name}</p>
-                    <p className="text-xs text-gray-500">SKU: {product.sku}</p>
-                  </div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => addRelatedProduct(product)}
+              {searchResults.map((product) => {
+                const imageUrl = getProductImageUrl(product);
+
+                return (
+                  <div
+                    key={product.id}
+                    className="p-3 flex items-center gap-3 hover:bg-gray-50 transition-colors"
                   >
-                    <Check className="mr-1 h-3 w-3" />
-                    Añadir
-                  </Button>
-                </div>
-              ))}
+                    {/* Imagen pequeña */}
+                    <div className="w-12 h-12 rounded border border-gray-200 overflow-hidden flex-shrink-0 bg-gray-100">
+                      {imageUrl ? (
+                        <img
+                          src={imageUrl}
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Package className="h-6 w-6 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Info del producto */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
+                      <p className="text-xs text-gray-500">SKU: {product.sku}</p>
+                    </div>
+
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => addRelatedProduct(product)}
+                    >
+                      <Check className="mr-1 h-3 w-3" />
+                      Añadir
+                    </Button>
+                  </div>
+                );
+              })}
             </div>
           )}
 
@@ -304,26 +342,47 @@ const SeoRelTab = ({ formData, updateField }) => {
               Seleccionados ({selectedProducts.length})
             </Label>
             <div className="space-y-2">
-              {selectedProducts.map((product) => (
-                <div
-                  key={product.id}
-                  className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg"
-                >
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{product.name}</p>
-                    <p className="text-xs text-gray-500">SKU: {product.sku}</p>
-                  </div>
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => removeRelatedProduct(product.id)}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              {selectedProducts.map((product) => {
+                const imageUrl = getProductImageUrl(product);
+
+                return (
+                  <div
+                    key={product.id}
+                    className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg"
                   >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
+                    {/* Imagen pequeña */}
+                    <div className="w-12 h-12 rounded border border-gray-200 overflow-hidden flex-shrink-0 bg-white">
+                      {imageUrl ? (
+                        <img
+                          src={imageUrl}
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Package className="h-6 w-6 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Info del producto */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
+                      <p className="text-xs text-gray-500">SKU: {product.sku}</p>
+                    </div>
+
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => removeRelatedProduct(product.id)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                );
+              })}
             </div>
           </div>
         ) : (

@@ -26,9 +26,10 @@ interface Product {
   id: number;
   name: string;
   price: any; // JSONB
-  weight?: number; // Peso en kg
-  stripe_enabled: boolean;
-  image_urls?: string[];
+  shipping_weight?: number; // Peso en kg
+  purchase_mode: string;
+  images?: any; // JSONB array
+  image_urls?: string[]; // Legacy
 }
 
 interface PriceCalculation {
@@ -260,6 +261,9 @@ serve(async (req) => {
     // 2. Parsear body
     const { cartItems } = await req.json() as { cartItems: CartItem[] };
 
+    console.log('📦 Checkout iniciado con', cartItems?.length || 0, 'items');
+    console.log('🔍 CartItems recibidos:', JSON.stringify(cartItems, null, 2));
+
     if (!cartItems || cartItems.length === 0) {
       throw new Error('El carrito está vacío');
     }
@@ -268,7 +272,7 @@ serve(async (req) => {
     const productIds = cartItems.map((item) => item.productId);
     const { data: products, error: dbError } = await supabaseClient
       .from('products')
-      .select('id, name, price, weight, stripe_enabled, image_urls')
+      .select('id, name, price, shipping_weight, purchase_mode, images, image_urls')
       .in('id', productIds);
 
     if (dbError) {
@@ -279,12 +283,39 @@ serve(async (req) => {
       throw new Error('No se encontraron productos válidos');
     }
 
-    // 4. Crear un mapa de productos para acceso rápido
+    // 4. Parsear precios si son strings (JSONB desde DB puede venir como string)
+    const parsedProducts = products.map((p) => {
+      let priceConfig = p.price;
+
+      // Si price es string, parsearlo
+      if (typeof priceConfig === 'string') {
+        try {
+          priceConfig = JSON.parse(priceConfig);
+          console.log(`✅ Precio parseado para producto ${p.id}:`, priceConfig);
+        } catch (e) {
+          console.error(`❌ Error parsing price for product ${p.id}:`, e);
+          throw new Error(`Producto ${p.id} tiene configuración de precio inválida`);
+        }
+      }
+
+      // Validar que tenga type
+      if (!priceConfig || !priceConfig.type) {
+        console.error(`❌ Producto ${p.id} - price sin type:`, priceConfig);
+        throw new Error(`Producto ${p.id} ("${p.name}") tiene configuración de precio incompleta`);
+      }
+
+      return {
+        ...p,
+        price: priceConfig
+      } as Product;
+    });
+
+    // 5. Crear un mapa de productos para acceso rápido
     const productsMap = new Map<number, Product>(
-      products.map((p) => [p.id, p as Product])
+      parsedProducts.map((p) => [p.id, p])
     );
 
-    // 5. Calcular line_items y peso total
+    // 6. Calcular line_items y peso total
     const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
     let totalWeight = 0;
     const itemsMetadata: any[] = [];
@@ -296,11 +327,19 @@ serve(async (req) => {
         throw new Error(`Producto ${cartItem.productId} no encontrado`);
       }
 
-      if (!product.stripe_enabled) {
+      // Verificar que el producto permite compra online
+      if (product.purchase_mode !== 'standard') {
         throw new Error(`Producto "${product.name}" no está disponible para compra online`);
       }
 
       // Calcular precio con extras
+      console.log(`💰 Calculando precio para producto ${product.id}:`, {
+        price: product.price,
+        quantity: cartItem.quantity,
+        selectedReason: cartItem.selectedReason,
+        customization: cartItem.customization
+      });
+
       const priceCalc = calculateItemPrice(
         product.price,
         cartItem.quantity,
@@ -308,11 +347,14 @@ serve(async (req) => {
         cartItem.customization
       );
 
+      console.log(`✅ Precio calculado para ${product.name}:`, priceCalc);
+
       // Convertir a céntimos para Stripe
       const unitAmountCents = Math.round(priceCalc.finalUnitPrice * 100);
+      console.log(`💵 Precio en céntimos: ${unitAmountCents}`);
 
       // Acumular peso
-      const itemWeight = (product.weight || 0) * cartItem.quantity;
+      const itemWeight = (product.shipping_weight || 0) * cartItem.quantity;
       totalWeight += itemWeight;
 
       // Crear descripción del item con personalización
@@ -323,6 +365,14 @@ serve(async (req) => {
         description = `Motivo: ${cartItem.selectedReason}. ${description}`;
       }
 
+      // Obtener imagen (soportar nuevo formato JSONB y legacy)
+      let imageUrl;
+      if (product.images && Array.isArray(product.images) && product.images.length > 0) {
+        imageUrl = product.images[0].url;
+      } else if (product.image_urls && product.image_urls.length > 0) {
+        imageUrl = product.image_urls[0];
+      }
+
       // Añadir line_item
       lineItems.push({
         price_data: {
@@ -330,7 +380,7 @@ serve(async (req) => {
           product_data: {
             name: product.name,
             description: description,
-            images: product.image_urls ? [product.image_urls[0]] : undefined,
+            images: imageUrl ? [imageUrl] : undefined,
           },
           unit_amount: unitAmountCents,
         },
@@ -350,7 +400,7 @@ serve(async (req) => {
       });
     }
 
-    // 6. Calcular y añadir gastos de envío
+    // 7. Calcular y añadir gastos de envío
     const shippingCostCents = calculateShippingCost(totalWeight);
 
     lineItems.push({
@@ -358,17 +408,17 @@ serve(async (req) => {
         currency: 'eur',
         product_data: {
           name: 'Gastos de envío',
-          description: `Envío calculado según peso total: ${totalWeight.toFixed(2)} kg`,
+          description: 'Envío a península',
         },
         unit_amount: shippingCostCents,
       },
       quantity: 1,
     });
 
-    // 7. Obtener origin desde headers
+    // 8. Obtener origin desde headers
     const origin = req.headers.get('origin') || 'http://localhost:5173';
 
-    // 8. Crear sesión de Stripe
+    // 9. Crear sesión de Stripe
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       line_items: lineItems,
@@ -392,20 +442,28 @@ serve(async (req) => {
       },
     });
 
-    // 9. Devolver sessionId al frontend
+    // 10. Devolver sessionId y URL al frontend
     return new Response(
-      JSON.stringify({ sessionId: session.id }),
+      JSON.stringify({
+        sessionId: session.id,
+        url: session.url  // URL completa de Stripe Checkout
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       }
     );
   } catch (error) {
-    console.error('Error en create-checkout:', error);
+    console.error('❌ ERROR en create-checkout:', error);
+    console.error('❌ Error message:', error.message);
+    console.error('❌ Error stack:', error.stack);
+    console.error('❌ Error type:', error.constructor.name);
 
     return new Response(
       JSON.stringify({
         error: error.message || 'Error desconocido',
+        errorType: error.constructor.name,
+        details: error.stack,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

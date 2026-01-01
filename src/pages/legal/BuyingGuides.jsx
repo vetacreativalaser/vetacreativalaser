@@ -25,7 +25,7 @@ const BuyingGuides = () => {
     {
       icon: <MessageSquareIcon className="h-8 w-8 text-black mb-3" />,
       title: "Proceso de Compra Simplificado",
-      description: "Como somos una empresa pequeña y artesanal, gestionamos los pedidos de forma personalizada. Simplemente contáctanos por WhatsApp o email con el producto que te interesa. Te guiaremos en el proceso, confirmaremos detalles y el pago se realiza de forma segura por Bizum o transferencia.",
+      description: "Como somos una empresa pequeña y artesanal, gestionamos los pedidos de forma personalizada. Simplemente, cómpralo si está la opción en la web o contáctanos por WhatsApp o email con el producto que te interesa. Te guiaremos en el proceso, confirmaremos detalles y el pago se realiza de forma segura por Bizum o enlace de pago personalizado como en la web.",
     },
   ];
 
@@ -49,8 +49,8 @@ const BuyingGuides = () => {
           transition={{ delay: 0.1 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl font-semibold text-black mb-3">Guías de Compra</h1>
-          <p className="text-lg text-gray-600">Consejos útiles para ayudarte a elegir y comprar nuestros productos artesanales.</p>
+          <h1 className="text-4xl font-semibold text-black mb-3">Guías de compra personalizada</h1>
+          <p className="text-lg text-gray-600">Consejos útiles para ayudarte a elegir y comprar nuestros productos más personalizados artesanales.</p>
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

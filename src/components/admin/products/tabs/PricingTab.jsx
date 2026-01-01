@@ -3,7 +3,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Trash2, DollarSign, Package, TrendingUp } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { PlusCircle, Trash2, DollarSign, Package, TrendingUp, Truck } from 'lucide-react';
 
 /**
  * PricingTab - Gestión de precios y dimensiones
@@ -35,6 +36,7 @@ const PricingTab = ({ formData, updateField }) => {
         newPriceConfig = {
           type: 'byReason',
           base: 0,
+          selectorLabel: 'Selecciona una opción', // Título personalizable
           reasons: [{ reason: '', increment: 0 }]
         };
         break;
@@ -287,8 +289,24 @@ const PricingTab = ({ formData, updateField }) => {
             />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="selector-label" className="text-sm font-medium">
+              Título del Selector (Ej: "Tamaño", "Extras", "Acabado")
+            </Label>
+            <Input
+              id="selector-label"
+              type="text"
+              placeholder="Selecciona una opción"
+              value={formData.price.selectorLabel || ''}
+              onChange={(e) => updateField('price', { ...formData.price, selectorLabel: e.target.value })}
+            />
+            <p className="text-xs text-muted-foreground">
+              Este texto aparecerá como título del selector en la página del producto
+            </p>
+          </div>
+
           <div className="space-y-3">
-            <Label className="text-sm font-medium">Motivos de Incremento</Label>
+            <Label className="text-sm font-medium">Opciones de Incremento</Label>
             {formData.price.reasons?.map((reason, index) => (
               <div key={index} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg bg-white">
                 <div className="flex-1 grid grid-cols-2 gap-3">
@@ -339,82 +357,148 @@ const PricingTab = ({ formData, updateField }) => {
         </div>
       )}
 
-      {/* DIMENSIONES (para cálculo de envíos) */}
+      {/* COMPRA ONLINE Y STRIPE */}
       <div className="pt-6 border-t border-gray-200">
         <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Package className="h-5 w-5 text-gray-600" />
-            <h3 className="text-sm font-semibold text-gray-900">
-              Dimensiones y Peso (opcional)
-            </h3>
-          </div>
-          <p className="text-xs text-gray-500">
-            Utilizado para cálculo automático de costes de envío
-          </p>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="weight" className="text-xs text-gray-600">
-                Peso (kg)
-              </Label>
-              <Input
-                id="weight"
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="0.0"
-                value={formData.weight || ''}
-                onChange={(e) => updateField('weight', parseFloat(e.target.value) || null)}
-              />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Truck className="h-5 w-5 text-gray-600" />
+              <h3 className="text-sm font-semibold text-gray-900">
+                Compra Online
+              </h3>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="length" className="text-xs text-gray-600">
-                Largo (cm)
+            <div className="flex items-center gap-2">
+              <Label htmlFor="online-purchase" className="text-sm text-gray-600">
+                Permitir compra online
               </Label>
-              <Input
-                id="length"
-                type="number"
-                min="0"
-                step="0.1"
-                placeholder="0.0"
-                value={formData.length || ''}
-                onChange={(e) => updateField('length', parseFloat(e.target.value) || null)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="width" className="text-xs text-gray-600">
-                Ancho (cm)
-              </Label>
-              <Input
-                id="width"
-                type="number"
-                min="0"
-                step="0.1"
-                placeholder="0.0"
-                value={formData.width || ''}
-                onChange={(e) => updateField('width', parseFloat(e.target.value) || null)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="height" className="text-xs text-gray-600">
-                Alto (cm)
-              </Label>
-              <Input
-                id="height"
-                type="number"
-                min="0"
-                step="0.1"
-                placeholder="0.0"
-                value={formData.height || ''}
-                onChange={(e) => updateField('height', parseFloat(e.target.value) || null)}
+              <Switch
+                id="online-purchase"
+                checked={formData.purchase_mode === 'standard'}
+                onCheckedChange={(checked) => updateField('purchase_mode', checked ? 'standard' : 'contact_only')}
               />
             </div>
           </div>
+
+          {formData.purchase_mode === 'standard' && (
+            <div className="p-4 border border-gray-200 rounded-lg bg-gray-50 space-y-4">
+              <p className="text-xs text-gray-600">
+                Configura las dimensiones y peso para el cálculo automático de costes de envío con Correos.
+              </p>
+
+              {/* Dimensiones del paquete */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="shipping-length" className="text-xs text-gray-600">
+                    Largo (cm)
+                  </Label>
+                  <Input
+                    id="shipping-length"
+                    type="number"
+                    min="0"
+                    step="any"
+                    placeholder="0.0"
+                    value={formData.shipping_length ?? ''}
+                    onChange={(e) => updateField('shipping_length', e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="shipping-width" className="text-xs text-gray-600">
+                    Ancho (cm)
+                  </Label>
+                  <Input
+                    id="shipping-width"
+                    type="number"
+                    min="0"
+                    step="any"
+                    placeholder="0.0"
+                    value={formData.shipping_width ?? ''}
+                    onChange={(e) => updateField('shipping_width', e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="shipping-height" className="text-xs text-gray-600">
+                    Alto (cm)
+                  </Label>
+                  <Input
+                    id="shipping-height"
+                    type="number"
+                    min="0"
+                    step="any"
+                    placeholder="0.0"
+                    value={formData.shipping_height ?? ''}
+                    onChange={(e) => updateField('shipping_height', e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="shipping-weight" className="text-xs text-gray-600">
+                    Peso Real (kg)
+                  </Label>
+                  <Input
+                    id="shipping-weight"
+                    type="number"
+                    min="0"
+                    step="any"
+                    placeholder="0.0"
+                    value={formData.shipping_weight ?? ''}
+                    onChange={(e) => updateField('shipping_weight', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Peso Volumétrico Calculado */}
+              {formData.shipping_length && formData.shipping_width && formData.shipping_height && (() => {
+                const length = parseFloat(formData.shipping_length);
+                const width = parseFloat(formData.shipping_width);
+                const height = parseFloat(formData.shipping_height);
+
+                if (!isNaN(length) && !isNaN(width) && !isNaN(height) && length > 0 && width > 0 && height > 0) {
+                  const volumetricWeight = (length * width * height) / 6000;
+                  return (
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label className="text-xs font-medium text-blue-900">
+                            Peso Volumétrico (Correos)
+                          </Label>
+                          <p className="text-xs text-blue-700 mt-0.5">
+                            Fórmula: (L × W × H) / 6000
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-blue-900">
+                            {volumetricWeight.toFixed(2)}
+                          </div>
+                          <div className="text-xs text-blue-700">kg</div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
+              {/* Stripe Sync Info */}
+              <div className="p-3 bg-purple-50 border border-purple-200 rounded-md">
+                <p className="text-xs text-purple-800">
+                  💳 Al guardar, este producto se sincronizará automáticamente con Stripe para pagos online.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {formData.purchase_mode === 'contact_only' && (
+            <div className="p-3 bg-gray-100 border border-gray-300 rounded-md">
+              <p className="text-xs text-gray-600">
+                ℹ️ Modo "Solo Consulta" activado. El producto mostrará precio de referencia pero los clientes deberán contactar para comprar.
+              </p>
+            </div>
+          )}
         </div>
       </div>
+
     </div>
   );
 };

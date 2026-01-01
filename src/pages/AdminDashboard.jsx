@@ -38,6 +38,7 @@ import { Label } from '@/components/ui/label';
 import { getProductPopularity } from '../utils/getProductPopularity'; // ajusta la ruta si cambia
 import CreateCategoryDialog from '@/components/product/CreateCategoryDialog';
 import EditCategoryDialog from '@/components/product/EditCategoryDialog';
+import ProductForm from '@/components/admin/products/ProductForm';
 
 const AdminDashboard = () => {
 
@@ -64,6 +65,10 @@ const AdminDashboard = () => {
   const [categories, setCategories] = useState([]);
   const [editingCategory, setEditingCategory] = useState(null);
 
+  // Estado para ProductForm
+  const [isProductFormOpen, setIsProductFormOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+
   useEffect(() => {
     const fetchPopularity = async () => {
       const data = await getProductPopularity();
@@ -85,10 +90,10 @@ const AdminDashboard = () => {
   const fetchAdminData = async () => {
     setIsLoading(true);
 
-    // 1) Perfiles con puntos
+    // 1) Perfiles
     const { data: profilesData, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, name, email, phone, purchase_count, points');
+      .select('id, name, email, phone, purchase_count');
     if (profilesError) {
       console.error(profilesError);
       toast({ title: 'Error', description: 'No se pudieron cargar los perfiles.', variant: 'destructive' });
@@ -152,12 +157,11 @@ const AdminDashboard = () => {
 
   const exportUsersCSV = () => {
     const csvContent = [
-      ['Nombre', 'Email', 'Teléfono', 'Puntos', 'Compras', 'Favoritos'],
+      ['Nombre', 'Email', 'Teléfono', 'Compras', 'Favoritos'],
       ...users.map(u => [
         u.name,
         u.email,
         u.phone,
-        u.points ?? 0,
         u.purchase_count ?? 0,
         u.favorites_list.map(f => `${f.name} (${f.id})`).join(' | ')
       ])
@@ -296,6 +300,19 @@ const AdminDashboard = () => {
 
   //Products
 
+  // Abrir ProductForm para editar o crear
+  const handleEditProduct = (product = null) => {
+    setEditingProduct(product); // null = modo creación, object = modo edición
+    setIsProductFormOpen(true);
+  };
+
+  // Callback cuando se guarda un producto
+  const handleProductSaved = (savedProduct) => {
+    // Refrescar lista de productos
+    fetchAdminData();
+    setEditingProduct(null);
+  };
+
     const handleDeleteProduct = async (productId) => {
     setIsLoading(true);
     const { error: favError } = await supabase
@@ -423,11 +440,12 @@ const handleDeleteCategory = async (categoryId) => {
               <Button onClick={() => openPurchaseDialog()} className="bg-blue-600 text-white hover:bg-blue-700 flex-1 sm:flex-initial">
                   <ShoppingBag className="mr-2 h-5 w-5" /> Crear Compra
               </Button>
-              <Link to="/admin/crear-producto" className="flex-1 sm:flex-initial">
-                  <Button className="bg-black text-white hover:bg-gray-800 w-full">
-                      <PackagePlus className="mr-2 h-5 w-5" /> Crear Producto
-                  </Button>
-              </Link>
+              <Button
+                onClick={() => handleEditProduct(null)}
+                className="bg-black text-white hover:bg-gray-800 flex-1 sm:flex-initial"
+              >
+                <PackagePlus className="mr-2 h-5 w-5" /> Crear Producto
+              </Button>
               <Button variant="outline" onClick={openCategoryModal}>
                Crear Categoría
              </Button>
@@ -543,7 +561,6 @@ const handleDeleteCategory = async (categoryId) => {
                           <th scope="col" className="px-6 py-3">Teléfono</th>
                           <th scope="col" className="px-6 py-3">Nº Compras</th>
                           <th scope="col" className="px-6 py-3">Favoritos</th>
-                          <th scope="col" className="px-6 py-3">Puntos</th>
                           <th scope="col" className="px-6 py-3">Acciones</th>
                         </tr>
                       </thead>
@@ -563,8 +580,6 @@ const handleDeleteCategory = async (categoryId) => {
                                 </ul>
                               )}
                             </td>
-
-                            <td className="px-6 py-4">{user.points ?? 0}</td>
                             <td className="px-6 py-4">
                               <Button variant="outline" size="sm" onClick={() => openPurchaseDialog(user)} className="text-xs text-blue-600 border-blue-600 hover:bg-blue-100" disabled={isLoading}>
                                 <PlusCircle className="h-3 w-3 mr-1"/> Añadir Compra
@@ -629,6 +644,15 @@ const handleDeleteCategory = async (categoryId) => {
                                   <Eye className="h-4 w-4"/>
                                 </Button>
                               </Link>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-green-600 hover:bg-green-100 p-1.5"
+                                onClick={() => handleEditProduct(product)}
+                                disabled={isLoading}
+                              >
+                                <Pencil className="h-4 w-4"/>
+                              </Button>
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button variant="ghost" size="sm" className="text-red-600 hover:bg-red-100 p-1.5" disabled={isLoading}>
@@ -995,6 +1019,14 @@ const handleDeleteCategory = async (categoryId) => {
 />
         </DialogContent>
      </Dialog>
+
+     {/* ProductForm Modal */}
+     <ProductForm
+       open={isProductFormOpen}
+       onOpenChange={setIsProductFormOpen}
+       product={editingProduct}
+       onSaved={handleProductSaved}
+     />
     </div>
   );
 };

@@ -28,7 +28,7 @@ const Products = () => {
           *,
           categorias:category_id ( title )
         `)
-        .eq('visible', true)
+        .eq('status', 'active')
         .order('created_at', { ascending: false });
 
       if (categoryId) {
@@ -139,8 +139,17 @@ const Products = () => {
       <Link to={`/productos/${product.id}`}>
         <img
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-          alt={product.image_alts?.[0] || product.name}
+          alt={
+            product.images?.[0]?.alt ||
+            product.image_alts?.[0] ||
+            product.name
+          }
           src={(() => {
+            // Formato nuevo JSONB
+            if (product.images?.[0]?.url) {
+              return product.images[0].url;
+            }
+            // Formato antiguo (array de URLs)
             try {
               const urls = typeof product.image_urls === 'string' ? JSON.parse(product.image_urls) : product.image_urls;
               return Array.isArray(urls) && urls.length > 0 ? urls[0] : '';

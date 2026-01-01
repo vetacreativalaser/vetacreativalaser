@@ -23,8 +23,11 @@ const ForgotPasswordPage = lazy(() => import('@/pages/ForgotPasswordPage'));
 const ResetPasswordPage = lazy(() => import('@/pages/ResetPasswordPage'));
 const TermsAndConditions = lazy(() => import('@/pages/legal/TermsAndConditions'));
 const PrivacyPolicy = lazy(() => import('@/pages/legal/PrivacyPolicy'));
+const CheckoutSuccess = lazy(() => import('@/pages/CheckoutSuccess'));
+const CheckoutCancel = lazy(() => import('@/pages/CheckoutCancel'));
 const CookiePolicy = lazy(() => import('@/pages/legal/CookiePolicy'));
 const BuyingGuides = lazy(() => import('@/pages/legal/BuyingGuides'));
+const Cart = lazy(() => import('@/pages/Cart'));
 
 const ProtectedRoute = ({ children, adminOnly = false }) => {
   const { user, loading } = useAuth();
@@ -76,6 +79,11 @@ function AppContent() {
             <Route path="/politica-de-privacidad" element={<PrivacyPolicy />} />
             <Route path="/politica-de-cookies" element={<CookiePolicy />} />
             <Route path="/guias-de-compra" element={<BuyingGuides />} />
+
+            {/* Cart and Checkout routes */}
+            <Route path="/carrito" element={<Cart />} />
+            <Route path="/checkout/success" element={<CheckoutSuccess />} />
+            <Route path="/checkout/cancel" element={<CheckoutCancel />} />
 
             <Route path="/favoritos" element={
               <ProtectedRoute>

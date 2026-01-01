@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/lib/supabaseClient';
 import { Package, ShoppingCart, MessageCircle, AlertCircle } from 'lucide-react';
@@ -57,13 +58,6 @@ const GeneralTab = ({ formData, updateField }) => {
       description: 'Precio visible (referencia). Botón "Contactar"',
       icon: MessageCircle,
       color: 'text-blue-600'
-    },
-    {
-      value: 'buy_and_clarify',
-      label: 'Comprar y Aclarar',
-      description: 'Pago inmediato + detalles post-compra',
-      icon: AlertCircle,
-      color: 'text-orange-600'
     }
   ];
 
@@ -90,15 +84,31 @@ const GeneralTab = ({ formData, updateField }) => {
           <Label htmlFor="sku" className="text-sm font-medium">
             SKU (Código único)
           </Label>
-          <Input
-            id="sku"
-            placeholder="Se genera automáticamente si vacío"
-            value={formData.sku}
-            onChange={(e) => updateField('sku', e.target.value)}
-            className="w-full"
-          />
+          <div className="flex gap-2">
+            <Input
+              id="sku"
+              placeholder={formData.sku ? formData.sku : "Se generará automáticamente al guardar"}
+              value={formData.sku}
+              onChange={(e) => updateField('sku', e.target.value)}
+              className="flex-1"
+            />
+            {!formData.sku && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  const randomSku = `SKU-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+                  updateField('sku', randomSku);
+                }}
+              >
+                Generar
+              </Button>
+            )}
+          </div>
           <p className="text-xs text-gray-500">
-            Deja vacío para generar automáticamente
+            {formData.sku
+              ? `SKU actual: ${formData.sku}`
+              : 'Deja vacío para generar automáticamente al guardar, o genera uno ahora'}
           </p>
         </div>
       </div>
@@ -273,9 +283,6 @@ const GeneralTab = ({ formData, updateField }) => {
               )}
               {formData.purchase_mode === 'contact_only' && (
                 <>El precio se muestra como referencia, pero el botón de acción es "Contactar" en lugar de "Añadir al carrito".</>
-              )}
-              {formData.purchase_mode === 'buy_and_clarify' && (
-                <>El cliente paga el precio base inmediatamente. Los detalles de diseño se acuerdan después por WhatsApp/Email.</>
               )}
             </p>
           </div>

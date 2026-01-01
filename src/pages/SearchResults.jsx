@@ -7,11 +7,6 @@ import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 
-// TODO: Reemplaza esta lista por una llamada real a Supabase si hace falta.
-const allProductsData = [
-  // ...
-];
-
 const normalizeText = (text) => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
 const renderProductPrice = (price) => {
@@ -32,16 +27,38 @@ const SearchResults = () => {
   const [favorites, setFavorites] = useState([]);
   const { user } = useAuth();
   const [isLoadingFavorites, setIsLoadingFavorites] = useState(false);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
 
+  // Buscar productos en Supabase filtrados por status=active
   useEffect(() => {
-    const lowerQuery = normalizeText(query);
-    const filtered = allProductsData.filter(product => {
-      const name = normalizeText(product.name);
-      const category = normalizeText(product.category || '');
-      const description = normalizeText(product.description || '');
-      return name.includes(lowerQuery) || category.includes(lowerQuery) || description.includes(lowerQuery);
-    });
-    setResults(filtered);
+    const searchProducts = async () => {
+      if (!query.trim()) {
+        setResults([]);
+        setIsLoadingProducts(false);
+        return;
+      }
+
+      setIsLoadingProducts(true);
+      const lowerQuery = `%${normalizeText(query)}%`;
+
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('status', 'active')
+        .or(`name.ilike.${lowerQuery},full_description.ilike.${lowerQuery}`);
+
+      if (error) {
+        console.error('Error searching products:', error);
+        toast({ title: 'Error', description: 'No se pudieron cargar los resultados.', variant: 'destructive' });
+        setResults([]);
+      } else {
+        setResults(data || []);
+      }
+
+      setIsLoadingProducts(false);
+    };
+
+    searchProducts();
   }, [query]);
 
   useEffect(() => {
@@ -88,7 +105,7 @@ const SearchResults = () => {
 
     toast({
       title: isFav ? "Eliminado de Favoritos" : "Añadido a Favoritos",
-      description: allProductsData.find(p => p.id === productId)?.name,
+      description: results.find(p => p.id === productId)?.name,
     });
     setIsLoadingFavorites(false);
   };
@@ -127,8 +144,16 @@ const SearchResults = () => {
                   <Link to={`/productos/${product.id}`}>
                     <img
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      alt={product.imageAlt || product.name}
-                      src={product.image_urls?.[0] || "https://images.unsplash.com/photo-1635865165118-917ed9e20936"}
+                      alt={
+                        product.images?.[0]?.alt ||
+                        product.image_alts?.[0] ||
+                        product.name
+                      }
+                      src={
+                        product.images?.[0]?.url ||
+                        product.image_urls?.[0] ||
+                        "https://images.unsplash.com/photo-1635865165118-917ed9e20936"
+                      }
                     />
                   </Link>
                   <Button
