@@ -92,7 +92,7 @@ const ProductForm = ({ open, onOpenChange, product = null, onSaved }) => {
         stripe_price_id: product.stripe_price_id || null,
 
         custom_fields: product.custom_fields || [],
-
+        specifications: product.specifications || [],
         // Normalizar imágenes (de arrays separados a array unificado)
         images: normalizeImages(product),
 

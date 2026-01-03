@@ -62,6 +62,38 @@ const GeneralTab = ({ formData, updateField }) => {
   ];
 
   const selectedMode = purchaseModes.find(m => m.value === formData.purchase_mode) || purchaseModes[0];
+  // --- Especificaciones dinámicas ---
+  const getSpecifications = () => {
+    if (!formData.specifications) return [];
+    if (Array.isArray(formData.specifications)) return formData.specifications;
+
+    if (typeof formData.specifications === 'string') {
+      try {
+        const parsed = JSON.parse(formData.specifications);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (e) {
+        console.error('Error parseando specifications', e);
+      }
+    }
+    return [];
+  };
+
+  const specifications = getSpecifications();
+
+  const addSpecification = () => {
+    updateField('specifications', [...specifications, '']);
+  };
+
+  const updateSpecification = (index, value) => {
+    const updated = [...specifications];
+    updated[index] = value;
+    updateField('specifications', updated);
+  };
+
+  const removeSpecification = (index) => {
+    const updated = specifications.filter((_, i) => i !== index);
+    updateField('specifications', updated);
+  };
 
   return (
     <div className="space-y-6">
@@ -161,6 +193,43 @@ const GeneralTab = ({ formData, updateField }) => {
         <p className="text-xs text-gray-500">
           Soporte para texto enriquecido. Describe el producto en detalle.
         </p>
+      </div>
+      {/* Especificaciones del producto */}
+      <div className="space-y-2 mt-4">
+        <Label className="font-semibold">Especificaciones</Label>
+
+        {specifications.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            Añade especificaciones como dimensiones, materiales, etc.
+          </p>
+        )}
+
+        {specifications.map((spec, index) => (
+          <div key={index} className="flex gap-2 items-center">
+            <Input
+              value={spec}
+              onChange={(e) => updateSpecification(index, e.target.value)}
+              placeholder={`Especificación ${index + 1}`}
+            />
+            <Button
+              variant="outline"
+              size="icon"
+              type="button"
+              onClick={() => removeSpecification(index)}
+            >
+              🗑
+            </Button>
+          </div>
+        ))}
+
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={addSpecification}
+        >
+          + Añadir especificación
+        </Button>
       </div>
 
       {/* Estado y Featured */}
