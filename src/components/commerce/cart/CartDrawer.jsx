@@ -5,7 +5,7 @@
  * Usa animaciones y overlay para mejor UX
  */
 
-import { X, ShoppingBag } from 'lucide-react';
+import { X, ShoppingBag, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCartStore, useCart } from '@/store/useCartStore';
 import CartItem from './CartItem';
@@ -14,6 +14,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCartPriceUpdate } from '@/hooks/useCartPriceUpdate';
 import { useCheckout } from '@/hooks/useCheckout';
+import { useShopPauseStatus } from '@/hooks/useShopPauseStatus';
 
 /**
  * CartDrawer Component
@@ -29,6 +30,7 @@ export default function CartDrawer() {
   // Custom hooks
   const { handleCheckout, isProcessing: isProcessingCheckout } = useCheckout(items);
   useCartPriceUpdate(items, updateItemPrice);
+  const { isPaused, pauseMessage } = useShopPauseStatus();
 
   // Limpiar items inválidos al abrir el carrito
   useEffect(() => {
@@ -166,14 +168,24 @@ export default function CartDrawer() {
               </p>
             </div>
 
+            {/* Mensaje de compras pausadas */}
+            {isPaused && pauseMessage && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-800 leading-relaxed">{pauseMessage}</p>
+                </div>
+              </div>
+            )}
+
             {/* Botón Tramitar Pedido */}
             <Button
               size="lg"
               className="w-full"
               onClick={handleCheckout}
-              disabled={isProcessingCheckout}
+              disabled={isProcessingCheckout || isPaused}
             >
-              {isProcessingCheckout ? 'Procesando...' : 'Tramitar Pedido'}
+              {isProcessingCheckout ? 'Procesando...' : isPaused ? 'Compras Pausadas' : 'Tramitar Pedido'}
             </Button>
 
             {/* Botón Ver Carrito Completo - Solo en Desktop */}

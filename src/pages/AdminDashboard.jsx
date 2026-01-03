@@ -15,6 +15,7 @@ import { Link } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { extractImagePaths, parseImageUrls } from '@/lib/imageUtils';
 import { Pencil } from "lucide-react";
+import ShopConfigPanel from '@/components/admin/ShopConfigPanel';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -423,13 +424,14 @@ const handleDeleteCategory = async (categoryId) => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-            <TabsList className="grid grid-cols-1 sm:grid-cols-6 gap-2 p-2 rounded sm:bg-gray-200">
+            <TabsList className="grid grid-cols-1 sm:grid-cols-7 gap-2 p-2 rounded sm:bg-gray-200">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="orders">Pedidos</TabsTrigger>
             <TabsTrigger value="users">Usuarios</TabsTrigger>
             <TabsTrigger value="products">Productos</TabsTrigger>
               <TabsTrigger value="categories">Categorías</TabsTrigger>
             <TabsTrigger value="reviews">Reseñas</TabsTrigger>
+            <TabsTrigger value="config">Configuración</TabsTrigger>
           </TabsList>
 
 
@@ -1024,6 +1026,9 @@ const handleDeleteCategory = async (categoryId) => {
               />
             </TabsContent>
 
+            <TabsContent value="config">
+              <ShopConfigPanel />
+            </TabsContent>
 
           </div>
         </Tabs>

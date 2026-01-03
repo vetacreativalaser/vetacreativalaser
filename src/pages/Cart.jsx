@@ -5,7 +5,7 @@
  * Vista previa al checkout definitivo con Stripe
  */
 
-import { ShoppingBag, ArrowLeft } from 'lucide-react';
+import { ShoppingBag, ArrowLeft, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCartStore, useCart } from '@/store/useCartStore';
 import CartItem from '@/components/commerce/cart/CartItem';
@@ -14,6 +14,7 @@ import { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCartPriceUpdate } from '@/hooks/useCartPriceUpdate';
 import { useCheckout } from '@/hooks/useCheckout';
+import { useShopPauseStatus } from '@/hooks/useShopPauseStatus';
 
 /**
  * Calcula el coste de envío basado en el peso total
@@ -41,6 +42,7 @@ export default function Cart() {
   // Custom hooks
   const { handleCheckout, isProcessing: isProcessingCheckout } = useCheckout(items);
   useCartPriceUpdate(items, updateItemPrice);
+  const { isPaused, pauseMessage } = useShopPauseStatus();
 
   // Calcular peso total y coste de envío
   const shippingInfo = useMemo(() => {
@@ -174,14 +176,24 @@ export default function Cart() {
                   </p>
                 </div>
 
+                {/* Mensaje de compras pausadas */}
+                {isPaused && pauseMessage && (
+                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg mb-4">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                      <p className="text-sm text-amber-800 leading-relaxed">{pauseMessage}</p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Botón Tramitar Pedido */}
                 <Button
                   size="lg"
                   className="w-full mb-3"
                   onClick={handleCheckout}
-                  disabled={isProcessingCheckout}
+                  disabled={isProcessingCheckout || isPaused}
                 >
-                  {isProcessingCheckout ? 'Procesando...' : 'Tramitar Pedido'}
+                  {isProcessingCheckout ? 'Procesando...' : isPaused ? 'Compras Pausadas' : 'Tramitar Pedido'}
                 </Button>
 
                 {/* Botón Seguir Comprando */}
