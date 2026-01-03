@@ -111,23 +111,19 @@ export const useCartStore = create(
 
         // Parsear price si es string
         let priceConfig = product.price;
-        console.log('🔍 addItem - product.price tipo:', typeof product.price, 'valor:', product.price);
 
         if (typeof priceConfig === 'string') {
           try {
             priceConfig = JSON.parse(priceConfig);
-            console.log('✅ addItem - price parseado correctamente:', priceConfig);
           } catch (e) {
-            console.error('❌ addItem - Error parsing price config:', e);
+            console.error('Error al parsear configuración de precio:', e);
           }
         }
 
         if (!priceConfig || !priceConfig.type) {
-          console.error('❌ addItem - Product missing price configuration:', product);
+          console.error('Producto sin configuración de precio válida:', product.id);
           return;
         }
-
-        console.log('✅ addItem - priceConfig validado:', priceConfig);
 
         const itemId = generateItemId(product.id, customization, selectedReason);
         const currentItems = get().items;

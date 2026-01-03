@@ -251,48 +251,104 @@ const AdminDashboard = () => {
 
     const handleDeleteProduct = async (productId) => {
     setIsLoading(true);
-    const { error: favError } = await supabase
-      .from('favorites')
-      .delete()
-      .eq('product_id', productId); // o el nombre correcto de tu columna
+    try {
+      // 1. Eliminar favoritos
+      const { error: favError } = await supabase
+        .from('favorites')
+        .delete()
+        .eq('product_id', productId);
 
-    if (favError) throw favError;
- // 2. Obtener las reseñas asociadas (para luego borrar imágenes si hace falta)
-    const { data: reviews, error: fetchReviewsError } = await supabase
-      .from('reviews')
-      .select('id, image_urls') // si usas 'image_urls' para las imágenes
-      .eq('product_id', productId);
-    if (fetchReviewsError) throw fetchReviewsError;
+      if (favError) throw favError;
 
-    // 3. Borrar imágenes de reseñas del bucket (si usas Supabase Storage)
-    for (const review of reviews || []) {
-      if (review.image_urls && Array.isArray(review.image_urls)) {
-        const { error: storageError } = await supabase.storage
-          .from('reviews') // nombre del bucket
-          .remove(review.image_urls); // array de paths
-        if (storageError) console.warn('Error al borrar imágenes:', storageError.message);
+      // 2. Obtener el producto para acceder a sus imágenes
+      const { data: productData, error: productFetchError } = await supabase
+        .from('products')
+        .select('images')
+        .eq('id', productId)
+        .single();
+
+      if (productFetchError) throw productFetchError;
+
+      // 3. Borrar imágenes del producto del storage
+      if (productData?.images && Array.isArray(productData.images) && productData.images.length > 0) {
+        const imagePaths = productData.images
+          .map(img => {
+            try {
+              const url = new URL(img.url);
+              return decodeURIComponent(url.pathname.split('/storage/v1/object/public/productos/')[1]);
+            } catch (e) {
+              console.error('Error parseando URL de imagen:', e);
+              return null;
+            }
+          })
+          .filter(Boolean);
+
+        if (imagePaths.length > 0) {
+          const { error: storageError } = await supabase.storage
+            .from('productos')
+            .remove(imagePaths);
+
+          if (storageError) console.error('Error al borrar imágenes del producto:', storageError.message);
+        }
       }
-    }
 
-    // 4. Eliminar reseñas asociadas al producto
-    const { error: reviewsDeleteError } = await supabase
-      .from('reviews')
-      .delete()
-      .eq('product_id', productId);
-    if (reviewsDeleteError) throw reviewsDeleteError;
+      // 4. Obtener las reseñas asociadas
+      const { data: reviews, error: fetchReviewsError } = await supabase
+        .from('reviews')
+        .select('id, image_urls')
+        .eq('product_id', productId);
 
-    const { error } = await supabase
-      .from('products')
-      .delete()
-      .eq('id', productId);
+      if (fetchReviewsError) throw fetchReviewsError;
 
-    if (error) {
-      toast({ title: "Error al eliminar producto", description: error.message, variant: "destructive" });
-    } else {
+      // 5. Borrar imágenes de reseñas del storage
+      for (const review of reviews || []) {
+        if (review.image_urls && Array.isArray(review.image_urls) && review.image_urls.length > 0) {
+          const reviewImagePaths = review.image_urls
+            .map(url => {
+              try {
+                const urlObj = new URL(url);
+                return decodeURIComponent(urlObj.pathname.split('/storage/v1/object/public/reviews/')[1]);
+              } catch (e) {
+                console.error('Error parseando URL de imagen de reseña:', e);
+                return null;
+              }
+            })
+            .filter(Boolean);
+
+          if (reviewImagePaths.length > 0) {
+            const { error: storageError } = await supabase.storage
+              .from('reviews')
+              .remove(reviewImagePaths);
+
+            if (storageError) console.error('Error al borrar imágenes de reseñas:', storageError.message);
+          }
+        }
+      }
+
+      // 6. Eliminar reseñas asociadas al producto
+      const { error: reviewsDeleteError } = await supabase
+        .from('reviews')
+        .delete()
+        .eq('product_id', productId);
+
+      if (reviewsDeleteError) throw reviewsDeleteError;
+
+      // 7. Eliminar el producto
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', productId);
+
+      if (error) throw error;
+
       setProducts(prevProducts => prevProducts.filter(p => p.id !== productId));
-      toast({ title: "Producto Eliminado" });
+      toast({ title: "Producto Eliminado", description: "Producto e imágenes eliminados correctamente" });
+    } catch (error) {
+      console.error('Error al eliminar producto:', error);
+      toast({ title: "Error al eliminar producto", description: error.message, variant: "destructive" });
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   //Reviews

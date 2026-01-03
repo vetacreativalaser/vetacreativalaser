@@ -24,7 +24,9 @@
       "Bash(supabase db execute:*)",
       "Bash(supabase functions delete:*)",
       "Bash(npm run build:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ]
   }
 }

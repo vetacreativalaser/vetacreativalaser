@@ -300,13 +300,6 @@ const ProductForm = ({ open, onOpenChange, product = null, onSaved }) => {
         purchase_mode: formData.purchase_mode,
       };
 
-      console.log('🔍 Enviando a Stripe Edge Function:', {
-        purchase_mode: stripeRecord.purchase_mode,
-        price_type: stripeRecord.price?.type,
-        price_value: stripeRecord.price?.value,
-        stripe_product_id: stripeRecord.stripe_product_id,
-      });
-
       try {
         // Llamar a la Edge Function con el record completo
         const { data: functionData, error: functionError } = await supabase.functions.invoke('sync-stripe-product', {
@@ -314,21 +307,6 @@ const ProductForm = ({ open, onOpenChange, product = null, onSaved }) => {
             record: stripeRecord,
           },
         });
-
-        console.log('📥 Respuesta de Stripe Edge Function:', functionData);
-
-        // DEBUG: Mostrar respuesta completa antes de que recargue
-        if (functionData) {
-          console.table({
-            'Success': functionData.success,
-            'Message': functionData.message,
-            'Reactivated': functionData.reactivated,
-            'Archived': functionData.archived,
-            'Skipped': functionData.skipped,
-            'Stripe Product ID': functionData.stripe_product_id,
-            'Stripe Price ID': functionData.stripe_price_id,
-          });
-        }
 
         if (functionError) {
           console.error('Error al sincronizar con Stripe:', functionError);

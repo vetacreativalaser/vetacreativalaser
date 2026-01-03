@@ -155,7 +155,28 @@ const ImagesTab = ({ formData, updateField }) => {
   };
 
   // Eliminar imagen
-  const removeImage = (imageId) => {
+  const removeImage = async (imageId) => {
+    const imageToRemove = formData.images.find(img => img.id === imageId);
+
+    // Borrar del storage si existe una URL
+    if (imageToRemove?.url) {
+      try {
+        const url = new URL(imageToRemove.url);
+        const path = decodeURIComponent(url.pathname.split('/storage/v1/object/public/productos/')[1]);
+
+        const { error } = await supabase.storage
+          .from('productos')
+          .remove([path]);
+
+        if (error) {
+          console.error('Error al eliminar imagen del storage:', error);
+        }
+      } catch (e) {
+        console.error('Error parseando URL de imagen:', e);
+      }
+    }
+
+    // Actualizar el estado
     const updatedImages = formData.images
       .filter(img => img.id !== imageId)
       .map((img, index) => ({ ...img, position: index }));

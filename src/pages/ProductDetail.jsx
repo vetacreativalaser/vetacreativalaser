@@ -75,15 +75,6 @@ const ProductDetail = () => {
         price: typeof currentProduct.price === 'string' ? JSON.parse(currentProduct.price) : currentProduct.price
       };
 
-      // DEBUG: Ver el estado del producto
-      console.log('🛒 DEBUG ProductDetail:', {
-        product_id: fixedProduct.id,
-        product_name: fixedProduct.name,
-        purchase_mode: fixedProduct.purchase_mode,
-        stripe_product_id: fixedProduct.stripe_product_id,
-        price_type: fixedProduct.price?.type,
-      });
-
       setProduct(fixedProduct);
       await fetchReviews(fixedProduct.id);
 
@@ -125,16 +116,7 @@ const ProductDetail = () => {
 
   // Handler para añadir al carrito
   const handleAddToCart = () => {
-    console.log('🛒 handleAddToCart llamado:', {
-      purchase_mode: product.purchase_mode,
-      isCustomizationValid,
-      quantity,
-      customValues,
-      selectedReason,
-    });
-
     if (product.purchase_mode !== 'standard') {
-      console.warn('❌ Purchase mode no es standard:', product.purchase_mode);
       toast({
         title: 'Producto no disponible',
         description: 'Este producto aún no está habilitado para compra online.',
@@ -144,7 +126,6 @@ const ProductDetail = () => {
     }
 
     if (!isCustomizationValid) {
-      console.warn('❌ Personalización inválida');
       toast({
         title: 'Completa la personalización',
         description: 'Por favor, completa todos los campos obligatorios.',
@@ -154,15 +135,14 @@ const ProductDetail = () => {
     }
 
     try {
-      console.log('✅ Añadiendo al carrito...');
       addItem(product, quantity, customValues, selectedReason);
       toast({
         title: '¡Añadido al carrito!',
         description: `${quantity} x ${product.name} añadido correctamente.`,
       });
-      openCart(); // Abrir el drawer automáticamente
+      openCart();
     } catch (error) {
-      console.error('❌ Error adding to cart:', error);
+      console.error('Error al añadir al carrito:', error);
       toast({
         title: 'Error',
         description: 'No se pudo añadir el producto al carrito.',
