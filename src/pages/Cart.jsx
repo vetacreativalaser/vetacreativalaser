@@ -10,10 +10,10 @@ import { Button } from '@/components/ui/button';
 import { useCartStore, useCart } from '@/store/useCartStore';
 import CartItem from '@/components/commerce/cart/CartItem';
 import { formatPrice } from '@/lib/priceUtils';
-import { useEffect, useState, useMemo } from 'react';
-import { supabase } from '@/lib/supabaseClient';
-import { toast } from '@/components/ui/use-toast';
+import { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useCartPriceUpdate } from '@/hooks/useCartPriceUpdate';
+import { useCheckout } from '@/hooks/useCheckout';
 
 /**
  * Calcula el coste de envío basado en el peso total
@@ -37,8 +37,10 @@ export default function Cart() {
   const navigate = useNavigate();
   const { items, updateQuantity, removeItem, clearCart, updateItemPrice, cleanupInvalidItems } = useCartStore();
   const { total } = useCart();
-  const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
-  const [pricesUpdated, setPricesUpdated] = useState(false);
+
+  // Custom hooks
+  const { handleCheckout, isProcessing: isProcessingCheckout } = useCheckout(items);
+  useCartPriceUpdate(items, updateItemPrice);
 
   // Calcular peso total y coste de envío
   const shippingInfo = useMemo(() => {
@@ -61,97 +63,6 @@ export default function Cart() {
       cleanupInvalidItems();
     }
   }, [cleanupInvalidItems]);
-
-  // Actualizar precios desde la BD cuando se carga la página
-  useEffect(() => {
-    const updatePrices = async () => {
-      if (items.length > 0 && !pricesUpdated) {
-        try {
-          const productIds = items.map(item => item.product.id);
-          const { data: products, error } = await supabase
-            .from('products')
-            .select('id, price')
-            .in('id', productIds);
-
-          if (!error && products) {
-            // Actualizar el priceConfig de cada item en el carrito
-            products.forEach(product => {
-              const cartItem = items.find(item => item.product.id === product.id);
-              if (cartItem && updateItemPrice) {
-                updateItemPrice(cartItem.itemId, product.price);
-              }
-            });
-            setPricesUpdated(true);
-          }
-        } catch (error) {
-          console.error('Error al actualizar precios:', error);
-        }
-      }
-    };
-
-    updatePrices();
-  }, [items, pricesUpdated, updateItemPrice]);
-
-  // Handler para procesar pedido con Stripe
-  const handleCheckout = async () => {
-    if (items.length === 0) {
-      toast({
-        title: 'Carrito vacío',
-        description: 'Añade productos antes de continuar.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    setIsProcessingCheckout(true);
-
-    try {
-      // 1. Preparar datos del carrito para el checkout
-      const cartItems = items.map(item => ({
-        productId: item.product.id,
-        productName: item.product.name,
-        quantity: item.quantity,
-        priceConfig: item.product.price,
-        customization: item.customization,
-        selectedReason: item.selectedReason
-      }));
-
-      // 2. Llamar a la Edge Function de Supabase para crear la sesión de Stripe
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { cartItems }
-      });
-
-      if (error) {
-        console.error('Error al invocar la función:', error);
-        throw new Error(error.message || 'Error al crear la sesión de pago');
-      }
-
-      if (!data || !data.url) {
-        console.error('Respuesta de la función:', data);
-        // Mostrar el error específico si viene en data
-        if (data && data.error) {
-          throw new Error(`Error del servidor: ${data.error}`);
-        }
-        throw new Error('No se recibió una URL de pago válida');
-      }
-
-      // 3. Redirigir al usuario a Stripe Checkout usando la URL completa
-      console.log('Redirigiendo a Stripe Checkout:', data.url);
-      window.location.href = data.url;
-
-      // Si todo va bien, el usuario será redirigido a Stripe
-      // No cerramos el carrito aquí porque la página se redirigirá
-
-    } catch (error) {
-      console.error('Error en checkout:', error);
-      toast({
-        title: 'Error al procesar el pedido',
-        description: error.message || 'Por favor, inténtalo de nuevo más tarde.',
-        variant: 'destructive'
-      });
-      setIsProcessingCheckout(false);
-    }
-  };
 
   const isEmpty = items.length === 0;
 

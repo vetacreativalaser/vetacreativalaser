@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/use-toast';
+import { extractImagePath } from '@/lib/imageUtils';
 import {
   Upload,
   X,
@@ -160,10 +161,9 @@ const ImagesTab = ({ formData, updateField }) => {
 
     // Borrar del storage si existe una URL
     if (imageToRemove?.url) {
-      try {
-        const url = new URL(imageToRemove.url);
-        const path = decodeURIComponent(url.pathname.split('/storage/v1/object/public/productos/')[1]);
+      const path = extractImagePath(imageToRemove.url, 'productos');
 
+      if (path) {
         const { error } = await supabase.storage
           .from('productos')
           .remove([path]);
@@ -171,8 +171,6 @@ const ImagesTab = ({ formData, updateField }) => {
         if (error) {
           console.error('Error al eliminar imagen del storage:', error);
         }
-      } catch (e) {
-        console.error('Error parseando URL de imagen:', e);
       }
     }
 

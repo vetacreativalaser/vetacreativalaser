@@ -13,6 +13,7 @@ import { Users, Heart, ShoppingBag, PackagePlus, Trash2, Eye, Star as StarIcon, 
 import { supabase } from '@/lib/supabaseClient';
 import { Link } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { extractImagePaths, parseImageUrls } from '@/lib/imageUtils';
 import { Pencil } from "lucide-react";
 import {
   AlertDialog,
@@ -271,17 +272,8 @@ const AdminDashboard = () => {
 
       // 3. Borrar imágenes del producto del storage
       if (productData?.images && Array.isArray(productData.images) && productData.images.length > 0) {
-        const imagePaths = productData.images
-          .map(img => {
-            try {
-              const url = new URL(img.url);
-              return decodeURIComponent(url.pathname.split('/storage/v1/object/public/productos/')[1]);
-            } catch (e) {
-              console.error('Error parseando URL de imagen:', e);
-              return null;
-            }
-          })
-          .filter(Boolean);
+        const imageUrls = productData.images.map(img => img.url);
+        const imagePaths = extractImagePaths(imageUrls, 'productos');
 
         if (imagePaths.length > 0) {
           const { error: storageError } = await supabase.storage
@@ -302,26 +294,15 @@ const AdminDashboard = () => {
 
       // 5. Borrar imágenes de reseñas del storage
       for (const review of reviews || []) {
-        if (review.image_urls && Array.isArray(review.image_urls) && review.image_urls.length > 0) {
-          const reviewImagePaths = review.image_urls
-            .map(url => {
-              try {
-                const urlObj = new URL(url);
-                return decodeURIComponent(urlObj.pathname.split('/storage/v1/object/public/reviews/')[1]);
-              } catch (e) {
-                console.error('Error parseando URL de imagen de reseña:', e);
-                return null;
-              }
-            })
-            .filter(Boolean);
+        const urls = parseImageUrls(review.image_urls);
+        const reviewImagePaths = extractImagePaths(urls, 'reviews');
 
-          if (reviewImagePaths.length > 0) {
-            const { error: storageError } = await supabase.storage
-              .from('reviews')
-              .remove(reviewImagePaths);
+        if (reviewImagePaths.length > 0) {
+          const { error: storageError } = await supabase.storage
+            .from('reviews')
+            .remove(reviewImagePaths);
 
-            if (storageError) console.error('Error al borrar imágenes de reseñas:', storageError.message);
-          }
+          if (storageError) console.error('Error al borrar imágenes de reseñas:', storageError.message);
         }
       }
 
