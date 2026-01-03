@@ -97,7 +97,7 @@ const PrivacyPolicy = () => {
               Nos reservamos el derecho de modificar esta política de privacidad en cualquier momento. Cualquier cambio será publicado en esta página.
             </p>
             <p className="text-gray-600 leading-relaxed mt-4">
-              Última actualización: 27/6/2025
+              Última actualización: 03/01/2026
             </p>
           </section>
         </motion.div>

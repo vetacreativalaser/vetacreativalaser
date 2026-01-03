@@ -255,27 +255,27 @@ export default function CartDrawer() {
               </p>
             </div>
 
-            {/* Botón Ver Carrito Completo */}
+            {/* Botón Tramitar Pedido */}
             <Button
               size="lg"
               className="w-full"
+              onClick={handleCheckout}
+              disabled={isProcessingCheckout}
+            >
+              {isProcessingCheckout ? 'Procesando...' : 'Tramitar Pedido'}
+            </Button>
+
+            {/* Botón Ver Carrito Completo - Solo en Desktop */}
+            <Button
+              size="lg"
+              variant="outline"
+              className="w-full hidden sm:flex"
               onClick={() => {
                 closeCart();
                 navigate('/carrito');
               }}
             >
               Ver Carrito Completo
-            </Button>
-
-            {/* Botón Tramitar Pedido Rápido */}
-            <Button
-              size="lg"
-              variant="outline"
-              className="w-full"
-              onClick={handleCheckout}
-              disabled={isProcessingCheckout}
-            >
-              {isProcessingCheckout ? 'Procesando...' : 'Tramitar Pedido Rápido'}
             </Button>
 
             {/* Botón Seguir Comprando */}

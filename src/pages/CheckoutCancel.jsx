@@ -13,7 +13,7 @@ export default function CheckoutCancel() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white flex items-center justify-center p-4">
+    <div className="min-h-screen bg-white flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         <div className="bg-white rounded-lg shadow-xl p-8 text-center">
           {/* Icono */}

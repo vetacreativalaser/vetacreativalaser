@@ -77,7 +77,6 @@ const ReviewsTab = ({ reviews, user, refreshReviews }) => {
 
       await supabase.from('reviews').delete().eq('id', review.id);
       refreshReviews();
-      alert('Reseña eliminada correctamente');
     } catch (error) {
       console.error('Error al eliminar reseña:', error);
       alert('Error al eliminar la reseña');
@@ -86,9 +85,9 @@ const ReviewsTab = ({ reviews, user, refreshReviews }) => {
 
   if (reviews.length === 0) {
     return (
-      <div className="text-center py-12">
+      <div className="text-center py-16">
         <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-        <p className="text-gray-500 text-lg">No has escrito reseñas todavía</p>
+        <p className="text-gray-600 text-lg font-medium">No has escrito reseñas todavía</p>
         <p className="text-gray-400 text-sm mt-2">
           Comparte tu experiencia con nuestros productos
         </p>
@@ -98,7 +97,7 @@ const ReviewsTab = ({ reviews, user, refreshReviews }) => {
 
   return (
     <>
-      <div className="flex flex-col space-y-6">
+      <div className="space-y-4">
         {reviews.map((review) => {
           const imageUrls =
             typeof review.image_urls === 'string'
@@ -113,34 +112,33 @@ const ReviewsTab = ({ reviews, user, refreshReviews }) => {
           return (
             <div
               key={review.id}
-              className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 hover:shadow-md transition-shadow"
+              className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-sm transition-shadow"
             >
               <div
                 className={`flex ${
                   shouldStack ? 'flex-col' : 'flex-row items-start'
                 } gap-4`}
               >
-                <div className="flex-1 min-w-0 space-y-3">
+                <div className="flex-1 space-y-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold text-gray-800">{name}</p>
+                    <p className="text-sm font-medium text-gray-900">{name}</p>
                     <Button
                       size="icon"
                       variant="ghost"
                       onClick={() => handleDelete(review)}
-                      className="hover:bg-red-50"
+                      className="hover:bg-red-50 h-8 w-8"
                     >
-                      <Trash2 className="w-4 h-4 text-red-500" />
+                      <Trash2 className="w-4 h-4 text-red-600" />
                     </Button>
                   </div>
 
-                  <div className="flex gap-1">
+                  <div className="flex gap-0.5">
                     {[1, 2, 3, 4, 5].map((v) => (
                       <Star
                         key={v}
                         className={`w-4 h-4 ${
-                          v <= review.rating ? 'text-yellow-400' : 'text-gray-300'
+                          v <= review.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-300'
                         }`}
-                        fill={v <= review.rating ? 'currentColor' : 'none'}
                       />
                     ))}
                   </div>
@@ -148,35 +146,35 @@ const ReviewsTab = ({ reviews, user, refreshReviews }) => {
                   {review.product_id && (
                     <Link
                       to={`/productos/${review.product_id}`}
-                      className="text-sm text-blue-600 hover:underline inline-block"
+                      className="text-sm text-gray-600 hover:text-gray-900 inline-flex items-center gap-1"
                     >
                       Ver producto →
                     </Link>
                   )}
 
-                  <p className="text-sm text-gray-700 text-justify break-words whitespace-pre-wrap">
+                  <p className="text-sm text-gray-700 leading-relaxed">
                     {review.content}
                   </p>
                 </div>
 
                 {Array.isArray(imageUrls) && imageUrls.length > 0 && (
                   <div
-                    className={`image-grid-2 ${
-                      shouldStack ? 'justify-start' : 'justify-center items-center self-center'
+                    className={`flex gap-2 ${
+                      shouldStack ? 'justify-start mt-3' : 'justify-center items-start'
                     }`}
                   >
                     {visibleImages.map((url, index) => (
-                      <div key={index} className="image-container">
+                      <div key={index} className="relative">
                         <img
                           src={url}
                           onClick={() => openLightbox(review, index)}
-                          className="review-image cursor-pointer"
+                          className="w-20 h-20 object-cover rounded border border-gray-200 cursor-pointer hover:opacity-75 transition-opacity"
                           alt={`img-${index}`}
                           draggable={false}
                         />
                         {index === visibleImages.length - 1 && extraImages > 0 && (
                           <div
-                            className="image-overlay"
+                            className="absolute inset-0 bg-black/50 rounded flex items-center justify-center text-white text-sm font-medium cursor-pointer"
                             onClick={() => openLightbox(review, index)}
                           >
                             +{extraImages}
@@ -240,23 +238,23 @@ const ReviewsTab = ({ reviews, user, refreshReviews }) => {
                 <ChevronRight className="h-5 w-5 text-black" />
               </button>
               {selectedReview && (
-                <div className="text-center text-sm">
-                  <p className="font-semibold text-black mb-1">
+                <div className="text-center text-sm border-t border-gray-200 pt-3">
+                  <p className="font-medium text-gray-900 mb-2">
                     {user.name?.split(' ').slice(0, 2).join(' ') || 'Usuario'}
                   </p>
-                  <div className="flex justify-center gap-1 mb-1">
+                  <div className="flex justify-center gap-0.5 mb-2">
                     {[1, 2, 3, 4, 5].map((v) => (
                       <Star
                         key={v}
                         className={`w-4 h-4 ${
                           v <= selectedReview.rating
-                            ? 'text-yellow-400'
+                            ? 'text-amber-400 fill-amber-400'
                             : 'text-gray-300'
                         }`}
-                        fill={v <= selectedReview.rating ? 'currentColor' : 'none'}
                       />
                     ))}
                   </div>
+                  <p className="text-gray-700 text-sm">{selectedReview.content}</p>
                 </div>
               )}
             </div>

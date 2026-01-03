@@ -10,10 +10,22 @@ import { Button } from '@/components/ui/button';
 import { useCartStore, useCart } from '@/store/useCartStore';
 import CartItem from '@/components/commerce/cart/CartItem';
 import { formatPrice } from '@/lib/priceUtils';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { toast } from '@/components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
+
+/**
+ * Calcula el coste de envío basado en el peso total
+ * Misma lógica que la Edge Function
+ */
+function calculateShippingCost(totalWeight) {
+  if (totalWeight < 2) {
+    return 5; // 5€
+  } else {
+    return 8; // 8€
+  }
+}
 
 /**
  * Cart Page Component
@@ -27,6 +39,21 @@ export default function Cart() {
   const { total } = useCart();
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
   const [pricesUpdated, setPricesUpdated] = useState(false);
+
+  // Calcular peso total y coste de envío
+  const shippingInfo = useMemo(() => {
+    const totalWeight = items.reduce((sum, item) => {
+      const weight = item.product.shipping_weight || 0;
+      return sum + (weight * item.quantity);
+    }, 0);
+
+    const cost = calculateShippingCost(totalWeight);
+
+    return {
+      weight: totalWeight,
+      cost: cost
+    };
+  }, [items]);
 
   // Limpiar items inválidos al cargar la página
   useEffect(() => {
@@ -215,18 +242,20 @@ export default function Cart() {
                       {formatPrice(total.subtotal)}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-sm text-gray-600">
-                    <span>Envío</span>
-                    <span>Calculado en el siguiente paso</span>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Gastos de envío</span>
+                    <span className="font-medium text-gray-900">
+                      {formatPrice(shippingInfo.cost)}
+                    </span>
                   </div>
                 </div>
 
                 {/* Total */}
                 <div className="border-t border-gray-200 pt-4 mb-6">
                   <div className="flex items-center justify-between">
-                    <span className="text-base font-semibold text-gray-900">Total estimado</span>
+                    <span className="text-base font-semibold text-gray-900">Total</span>
                     <span className="text-2xl font-bold text-gray-900">
-                      {formatPrice(total.subtotal)}
+                      {formatPrice(total.subtotal + shippingInfo.cost)}
                     </span>
                   </div>
                   <p className="text-xs text-gray-500 mt-2">

@@ -76,8 +76,9 @@ const Register = ({ isAuthPageContext = false }) => {
               <Input id="email-address" name="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1 border-gray-300 focus:border-black focus:ring-black" placeholder="tu.email@ejemplo.com" disabled={isLoading}/>
             </div>
             <div>
-              <Label htmlFor="phone">Número de teléfono (Opcional)</Label>
-              <Input id="phone" name="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="mt-1 border-gray-300 focus:border-black focus:ring-black" placeholder="Tu número de teléfono" disabled={isLoading}/>
+              <Label htmlFor="phone">Número de teléfono</Label>
+              <Input id="phone" name="phone" type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} className="mt-1 border-gray-300 focus:border-black focus:ring-black" placeholder="Tu número de teléfono" disabled={isLoading}/>
+              <p className="text-xs text-gray-500 mt-1">Para poder contactarte sobre tus pedidos</p>
             </div>
             <div>
               <Label htmlFor="password">Contraseña (mín. 6 caracteres)</Label>

@@ -258,7 +258,17 @@ serve(async (req) => {
       }
     );
 
-    // 2. Parsear body
+    // 2. Obtener usuario autenticado
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+
+    if (userError) {
+      console.warn('⚠️ No se pudo obtener usuario:', userError.message);
+    }
+
+    const userId = user?.id || null;
+    console.log('👤 Usuario autenticado:', userId);
+
+    // 3. Parsear body
     const { cartItems } = await req.json() as { cartItems: CartItem[] };
 
     console.log('📦 Checkout iniciado con', cartItems?.length || 0, 'items');
@@ -435,6 +445,8 @@ serve(async (req) => {
           shippingCost: (shippingCostCents / 100).toFixed(2),
           // Guardar items en JSON para el webhook
           items: JSON.stringify(itemsMetadata),
+          // Guardar userId para vincular el pedido al usuario autenticado
+          userId: userId || '',
         },
       },
       metadata: {

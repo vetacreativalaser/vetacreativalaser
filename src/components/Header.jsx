@@ -159,10 +159,6 @@ const Header = () => {
                 </Button>
 
                 <CartTrigger />
-
-                <Button variant="ghost" size="icon" className="hover:bg-transparent p-1" type="button" aria-label="Icono perfil" onClick={handleProfileIconClick}>
-                  <User className="h-7 w-7 text-gray-600 hover:text-black" strokeWidth={1.5}/>
-                </Button>
             </div>
           </div>
         </div>
@@ -202,6 +198,23 @@ const Header = () => {
                       {item.name}
                     </Link>
                   ))}
+
+                  {/* Separador */}
+                  <div className="border-t border-gray-200 my-3"></div>
+
+                  {/* Opción de Perfil */}
+                  <Link
+                    to={user ? '/perfil' : '/auth'}
+                    className={`flex items-center gap-3 px-3 py-2.5 text-base font-normal normal-case tracking-normal rounded-md ${
+                      isActive('/perfil')
+                        ? 'text-black bg-gray-100'
+                        : 'text-gray-600 hover:text-black hover:bg-gray-50'
+                    }`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <User className="h-5 w-5" strokeWidth={1.5} />
+                    <span>{user ? 'Mi Perfil' : 'Iniciar Sesión'}</span>
+                  </Link>
                 </div>
               </motion.div>
             </>

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
 import { KeyRound } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
 
 const ResetPasswordPage = () => {
   const navigate = useNavigate();
@@ -14,35 +15,21 @@ const ResetPasswordPage = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-const [tokenValid, setTokenValid] = useState(null);
-  const [token, setToken] = useState('');
+  const [tokenValid, setTokenValid] = useState(null);
+  const [accessToken, setAccessToken] = useState('');
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const tokenFromUrl = urlParams.get('token');
+    const token = urlParams.get('token');
+    const type = urlParams.get('type');
 
-    if (!tokenFromUrl) {
+    if (!token || type !== 'recovery') {
       setTokenValid(false);
       return;
     }
 
-    setToken(tokenFromUrl);
-
-    // Validar token con función Supabase
-    fetch('https://dspsrnprvrpjrkicxiso.functions.supabase.co/verify-reset-token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: tokenFromUrl })
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.valid) {
-          setTokenValid(true);
-        } else {
-          setTokenValid(false);
-        }
-      })
-      .catch(() => setTokenValid(false));
+    setAccessToken(token);
+    setTokenValid(true);
   }, []);
 
   const handleSubmit = async (e) => {
@@ -59,23 +46,26 @@ const [tokenValid, setTokenValid] = useState(null);
 
     setIsLoading(true);
     try {
-      const res = await fetch('https://dspsrnprvrpjrkicxiso.functions.supabase.co/reset-password-from-token', {
+      // Llamar a la Edge Function para resetear la contraseña
+      const res = await fetch('https://dspsrnprvrpjrkicxiso.functions.supabase.co/reset-password-with-token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, newPassword })
+        body: JSON.stringify({ token: accessToken, newPassword })
       });
 
       const result = await res.json();
 
-      if (res.ok && result.success) {
-        toast({ 
-          title: "Contraseña restablecida", 
-          description: "Tu contraseña ha sido actualizada exitosamente." 
-        });
-        navigate('/auth?mode=login');
-      } else {
+      if (!res.ok || !result.success) {
         throw new Error(result.error || "No se pudo restablecer la contraseña.");
       }
+
+      toast({
+        title: "Contraseña restablecida",
+        description: "Tu contraseña ha sido actualizada exitosamente."
+      });
+
+      // Redirigir al login
+      navigate('/auth?mode=login');
     } catch (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {

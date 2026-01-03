@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, Heart, ShoppingBag, PackagePlus, Trash2, Eye, PlusCircle, Star as StarIcon } from 'lucide-react';
+import { Users, Heart, ShoppingBag, PackagePlus, Trash2, Eye, Star as StarIcon, Copy, Mail, Phone, Calendar, Package } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { Link } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -28,17 +28,16 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogClose,
 } from "@/components/ui/dialog"
 import { Label } from '@/components/ui/label';
 import { getProductPopularity } from '../utils/getProductPopularity'; // ajusta la ruta si cambia
 import CreateCategoryDialog from '@/components/product/CreateCategoryDialog';
 import EditCategoryDialog from '@/components/product/EditCategoryDialog';
 import ProductForm from '@/components/admin/products/ProductForm';
+import OrderManagement from '@/components/admin/orders/OrderManagement';
 
 const AdminDashboard = () => {
 
@@ -49,15 +48,8 @@ const AdminDashboard = () => {
   const [reviews, setReviews] = useState([]);
   const [searchTermUsers, setSearchTermUsers] = useState('');
   const [searchTermProducts, setSearchTermProducts] = useState('');
-  const [searchTermPurchases, setSearchTermPurchases] = useState('');
-  const [selectedUserForPurchase, setSelectedUserForPurchase] = useState(null);
-  const [newPurchaseData, setNewPurchaseData] = useState({ user_email: '', name: '', description: '', status: 'En preparación' });
-  const [isPurchaseDialogOpen, setIsPurchaseDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [editPurchaseData, setEditPurchaseData] = useState(null);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const purchaseStatusOptions = ['En preparación', 'Enviado', 'Finalizada'];
   const [popularProducts, setPopularProducts] = useState([]);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const openCategoryModal = () => setIsCategoryModalOpen(true);
@@ -68,6 +60,11 @@ const AdminDashboard = () => {
   // Estado para ProductForm
   const [isProductFormOpen, setIsProductFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+
+  // Estado para detalles de usuario
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [isUserDetailsOpen, setIsUserDetailsOpen] = useState(false);
+  const [userOrders, setUserOrders] = useState([]);
 
   useEffect(() => {
     const fetchPopularity = async () => {
@@ -85,6 +82,19 @@ const AdminDashboard = () => {
     }
     fetchAdminData();
   }, []);
+
+  // Detectar userId en URL y abrir diálogo de detalles
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const userIdParam = urlParams.get('userId');
+
+    if (userIdParam && users.length > 0) {
+      const user = users.find(u => u.id === userIdParam);
+      if (user) {
+        handleViewUserDetails(user);
+      }
+    }
+  }, [users]);
 
   //Funciones
   const fetchAdminData = async () => {
@@ -142,15 +152,15 @@ const AdminDashboard = () => {
 
     setUsers(usersWithDetails);
 
-    // 6) Productos, compras y reseñas
-    const [{ data: productsData }, { data: purchasesData }, { data: reviewsData }] = await Promise.all([
+    // 6) Productos, reseñas y pedidos (orders)
+    const [{ data: productsData }, { data: reviewsData }, { data: ordersData }] = await Promise.all([
       supabase.from('products').select(`*,categorias (categoria)`).order('created_at', { ascending: false }),
-      supabase.from('purchases').select('*').order('created_at', { ascending: false }),
       supabase.from('reviews').select('*').order('created_at', { ascending: false }),
+      supabase.from('orders').select('*').order('created_at', { ascending: false }),
     ]);
 
     setProducts(productsData || []);
-    setPurchases(purchasesData || []);
+    setPurchases(ordersData || []); // Ahora purchases contiene los datos de orders
     setReviews(reviewsData || []);
     setIsLoading(false);
   };
@@ -179,10 +189,38 @@ const AdminDashboard = () => {
     document.body.removeChild(link);
   };
 
- 
+  // Ver detalles de usuario
+  const handleViewUserDetails = async (user) => {
+    setSelectedUser(user);
+    setIsUserDetailsOpen(true);
 
-  
- 
+    // Cargar pedidos del usuario
+    try {
+      const { data: orders, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setUserOrders(orders || []);
+    } catch (error) {
+      console.error('Error loading user orders:', error);
+      setUserOrders([]);
+    }
+  };
+
+  // Copiar al portapapeles
+  const copyToClipboard = (text, label) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: 'Copiado',
+      description: `${label} copiado al portapapeles`,
+    });
+  };
+
+
+
   //Filtros
 
   const filteredUsers = users.filter(user =>
@@ -195,108 +233,6 @@ const AdminDashboard = () => {
     (product.category && product.category.toLowerCase().includes(searchTermProducts.toLowerCase()))
   );
 
-  const filteredPurchases = purchases.filter(purchase =>
-    (purchase.userName && purchase.userName.toLowerCase().includes(searchTermPurchases.toLowerCase())) ||
-    (purchase.user_email && purchase.user_email.toLowerCase().includes(searchTermPurchases.toLowerCase())) ||
-    (purchase.name && purchase.name.toLowerCase().includes(searchTermPurchases.toLowerCase())) ||
-    (purchase.status && purchase.status.toLowerCase().includes(searchTermPurchases.toLowerCase()))
-  );
-
-  //Compras
-
-  const openPurchaseDialog = (user = null) => {
-    if (user) {
-      setSelectedUserForPurchase(user);
-      setNewPurchaseData({ user_email: user.email, name: '', description: '', status: 'En preparación' });
-    } else {
-      setSelectedUserForPurchase(null);
-      setNewPurchaseData({ user_email: '', name: '', description: '', status: 'En preparación' });
-    }
-    setIsPurchaseDialogOpen(true);
-  };
-  const handleCreatePurchase = async () => {
-  setIsLoading(true);
-  const targetUserEmail = selectedUserForPurchase ? selectedUserForPurchase.email : newPurchaseData.user_email;
-
-  if (!targetUserEmail || !newPurchaseData.name) {
-    toast({ title: "Campos incompletos", description: "El email del usuario y el nombre de la compra son obligatorios.", variant: "destructive" });
-    setIsLoading(false);
-    return;
-  }
-
-  // Obtener user_id desde la tabla profiles en lugar de usar Admin API
-  let targetUserId = selectedUserForPurchase ? selectedUserForPurchase.id : null;
-  if (!targetUserId) {
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('email', targetUserEmail)
-      .single();
-    if (profileError) {
-      console.error('Error obteniendo perfil:', profileError);
-      toast({ title: "Error", description: "No se pudo obtener el ID de usuario.", variant: "destructive" });
-      setIsLoading(false);
-      return;
-    }
-    targetUserId = profileData.id;
-  }
-
-  const { data, error } = await supabase
-    .from('purchases')
-    .insert([{ ...newPurchaseData, user_email: targetUserEmail, user_id: targetUserId }])
-    .select('*, profiles(name)')
-    .single();
-
-  if (error) {
-    toast({ title: "Error al crear compra", description: error.message, variant: "destructive" });
-  } else if (data) {
-    setPurchases(prev => [{ ...data, userName: data.profiles?.name || data.user_email.split('@')[0] }, ...prev]);
-    toast({ title: "Compra Creada", description: `La compra "${data.name}" ha sido creada para ${targetUserEmail}.` });
-    setIsPurchaseDialogOpen(false);
-    setNewPurchaseData({ user_email: '', name: '', description: '', status: 'En preparación' });
-    setSelectedUserForPurchase(null);
-  }
-  setIsLoading(false);
-  };
-
-  const handleDeletePurchase = async (purchaseId) => {
-    setIsLoading(true);
-    const { error } = await supabase
-      .from('purchases')
-      .delete()
-      .eq('id', purchaseId);
-    
-    if (error) {
-      toast({ title: "Error al eliminar compra", description: error.message, variant: "destructive"});
-    } else {
-      setPurchases(prev => prev.filter(p => p.id !== purchaseId));
-      toast({ title: "Compra Eliminada" });
-    }
-    setIsLoading(false);
-  };
-  const handleEditPurchase = async () => {
-    if (!editPurchaseData || !editPurchaseData.id) return;
-    setIsLoading(true);
-
-    const { error } = await supabase
-      .from('purchases')
-      .update({
-        name: editPurchaseData.name,
-        description: editPurchaseData.description,
-        status: editPurchaseData.status
-      })
-      .eq('id', editPurchaseData.id);
-
-    if (error) {
-      toast({ title: "Error al editar compra", description: error.message, variant: "destructive" });
-    } else {
-      setPurchases(prev => prev.map(p => p.id === editPurchaseData.id ? { ...p, ...editPurchaseData } : p));
-      toast({ title: "Compra Actualizada" });
-      setIsEditDialogOpen(false);
-      setEditPurchaseData(null);
-    }
-    setIsLoading(false);
-  };
 
   //Products
 
@@ -437,9 +373,6 @@ const handleDeleteCategory = async (categoryId) => {
         <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
             <h1 className="text-3xl sm:text-4xl font-semibold text-black text-center sm:text-left">Dashboard de Administrador</h1>
             <div className="flex gap-2 w-full sm:w-auto">
-              <Button onClick={() => openPurchaseDialog()} className="bg-blue-600 text-white hover:bg-blue-700 flex-1 sm:flex-initial">
-                  <ShoppingBag className="mr-2 h-5 w-5" /> Crear Compra
-              </Button>
               <Button
                 onClick={() => handleEditProduct(null)}
                 className="bg-black text-white hover:bg-gray-800 flex-1 sm:flex-initial"
@@ -455,11 +388,10 @@ const handleDeleteCategory = async (categoryId) => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
             <TabsList className="grid grid-cols-1 sm:grid-cols-6 gap-2 p-2 rounded sm:bg-gray-200">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="orders">Pedidos</TabsTrigger>
             <TabsTrigger value="users">Usuarios</TabsTrigger>
             <TabsTrigger value="products">Productos</TabsTrigger>
               <TabsTrigger value="categories">Categorías</TabsTrigger>
-
-            <TabsTrigger value="purchases">Compras</TabsTrigger>
             <TabsTrigger value="reviews">Reseñas</TabsTrigger>
           </TabsList>
 
@@ -527,6 +459,10 @@ const handleDeleteCategory = async (categoryId) => {
 
             </TabsContent>
 
+            <TabsContent value="orders">
+              <OrderManagement />
+            </TabsContent>
+
             <TabsContent value="users">
               <motion.div 
                   initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
@@ -581,8 +517,14 @@ const handleDeleteCategory = async (categoryId) => {
                               )}
                             </td>
                             <td className="px-6 py-4">
-                              <Button variant="outline" size="sm" onClick={() => openPurchaseDialog(user)} className="text-xs text-blue-600 border-blue-600 hover:bg-blue-100" disabled={isLoading}>
-                                <PlusCircle className="h-3 w-3 mr-1"/> Añadir Compra
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleViewUserDetails(user)}
+                                className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                              >
+                                <Eye className="w-4 h-4 mr-1" />
+                                Ver Detalles
                               </Button>
                             </td>
                           </tr>
@@ -593,6 +535,249 @@ const handleDeleteCategory = async (categoryId) => {
                   </div>
                 }
               </motion.div>
+
+              {/* User Details Dialog */}
+              <Dialog open={isUserDetailsOpen} onOpenChange={setIsUserDetailsOpen}>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="text-2xl font-bold text-blue-600">
+                      Detalles del Usuario
+                    </DialogTitle>
+                  </DialogHeader>
+
+                  {selectedUser && (
+                    <div className="space-y-6">
+                      {/* Información de Contacto - Destacada */}
+                      <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-6 rounded-lg border-2 border-blue-200">
+                        <h3 className="text-lg font-semibold mb-4 text-blue-900 flex items-center">
+                          <Users className="w-5 h-5 mr-2" />
+                          Información de Contacto
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Nombre */}
+                          <div className="bg-white p-4 rounded shadow-sm">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <p className="text-xs text-gray-500 mb-1">Nombre</p>
+                                <p className="font-semibold text-gray-900">{selectedUser.name || 'N/A'}</p>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => copyToClipboard(selectedUser.name || '', 'Nombre')}
+                              >
+                                <Copy className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Email */}
+                          <div className="bg-white p-4 rounded shadow-sm">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <p className="text-xs text-gray-500 mb-1 flex items-center">
+                                  <Mail className="w-3 h-3 mr-1" />
+                                  Email
+                                </p>
+                                <p className="font-semibold text-gray-900 break-all">{selectedUser.email}</p>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => copyToClipboard(selectedUser.email, 'Email')}
+                              >
+                                <Copy className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Teléfono */}
+                          <div className="bg-white p-4 rounded shadow-sm">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <p className="text-xs text-gray-500 mb-1 flex items-center">
+                                  <Phone className="w-3 h-3 mr-1" />
+                                  Teléfono
+                                </p>
+                                <p className="font-semibold text-gray-900">{selectedUser.phone || 'No proporcionado'}</p>
+                              </div>
+                              {selectedUser.phone && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => copyToClipboard(selectedUser.phone, 'Teléfono')}
+                                >
+                                  <Copy className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* User ID */}
+                          <div className="bg-white p-4 rounded shadow-sm">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <p className="text-xs text-gray-500 mb-1">ID de Usuario</p>
+                                <p className="font-mono text-xs text-gray-700 break-all">{selectedUser.id}</p>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => copyToClipboard(selectedUser.id, 'ID')}
+                              >
+                                <Copy className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Información Adicional */}
+                      <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                        <h3 className="text-lg font-semibold mb-4 text-gray-900 flex items-center">
+                          <Calendar className="w-5 h-5 mr-2" />
+                          Información de Cuenta
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">Fecha de Registro</p>
+                            <p className="font-medium text-gray-900">
+                              {selectedUser.created_at
+                                ? new Date(selectedUser.created_at).toLocaleDateString('es-ES', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
+                                  })
+                                : 'N/A'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">Total de Compras</p>
+                            <p className="font-medium text-gray-900">{selectedUser.purchase_count || 0} pedidos</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">Productos Favoritos</p>
+                            <p className="font-medium text-gray-900">{selectedUser.favorites_list?.length || 0} productos</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Favoritos */}
+                      {selectedUser.favorites_list && selectedUser.favorites_list.length > 0 && (
+                        <div className="bg-white p-6 rounded-lg border border-gray-200">
+                          <h3 className="text-lg font-semibold mb-4 text-gray-900 flex items-center">
+                            <Heart className="w-5 h-5 mr-2 text-red-500" />
+                            Productos Favoritos
+                          </h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {selectedUser.favorites_list.map((fav) => (
+                              <div key={fav.id} className="bg-gray-50 p-3 rounded flex items-center justify-between">
+                                <div>
+                                  <p className="font-medium text-gray-900">{fav.name}</p>
+                                  <p className="text-xs text-gray-500">ID: {fav.id}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Pedidos del Usuario */}
+                      <div className="bg-white p-6 rounded-lg border border-gray-200">
+                        <h3 className="text-lg font-semibold mb-4 text-gray-900 flex items-center">
+                          <Package className="w-5 h-5 mr-2 text-blue-600" />
+                          Historial de Pedidos ({userOrders.length})
+                        </h3>
+                        {userOrders.length > 0 ? (
+                          <div className="space-y-3 max-h-96 overflow-y-auto">
+                            {userOrders.map((order) => (
+                              <div key={order.id} className="bg-gray-50 p-4 rounded border border-gray-200">
+                                <div className="flex items-start justify-between mb-2">
+                                  <div>
+                                    <p className="font-semibold text-gray-900">{order.order_number}</p>
+                                    <p className="text-xs text-gray-500">
+                                      {new Date(order.created_at).toLocaleDateString('es-ES', {
+                                        year: 'numeric',
+                                        month: 'short',
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      })}
+                                    </p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="font-bold text-blue-600">{order.total.toFixed(2)} €</p>
+                                    <span className={`text-xs px-2 py-1 rounded ${
+                                      order.status === 'paid' ? 'bg-green-100 text-green-800' :
+                                      order.status === 'producing' ? 'bg-blue-100 text-blue-800' :
+                                      order.status === 'completed' ? 'bg-purple-100 text-purple-800' :
+                                      order.status === 'shipped' ? 'bg-indigo-100 text-indigo-800' :
+                                      'bg-red-100 text-red-800'
+                                    }`}>
+                                      {order.status === 'paid' ? 'Pagado' :
+                                       order.status === 'producing' ? 'En Producción' :
+                                       order.status === 'completed' ? 'Completado' :
+                                       order.status === 'shipped' ? 'Enviado' :
+                                       'Cancelado'}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                  <p className="mb-1">
+                                    <strong>Email de pago:</strong> {order.customer_email}
+                                  </p>
+                                  {order.items && order.items.length > 0 && (
+                                    <p className="text-xs">
+                                      {order.items.length} producto{order.items.length !== 1 ? 's' : ''}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-center text-gray-500 py-8">
+                            Este usuario no tiene pedidos registrados
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Acciones Rápidas */}
+                      <div className="bg-white p-6 rounded-lg border border-gray-200">
+                        <h3 className="text-lg font-semibold mb-4 text-gray-900">Acciones Rápidas</h3>
+                        <div className="flex flex-wrap gap-3">
+                          {selectedUser.email && (
+                            <Button
+                              variant="outline"
+                              onClick={() => window.location.href = `mailto:${selectedUser.email}`}
+                              className="flex items-center"
+                            >
+                              <Mail className="w-4 h-4 mr-2" />
+                              Enviar Email
+                            </Button>
+                          )}
+                          {selectedUser.phone && (
+                            <Button
+                              variant="outline"
+                              onClick={() => window.location.href = `tel:${selectedUser.phone}`}
+                              className="flex items-center"
+                            >
+                              <Phone className="w-4 h-4 mr-2" />
+                              Llamar
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsUserDetailsOpen(false)}>
+                      Cerrar
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </TabsContent>
 
             <TabsContent value="products">
@@ -681,111 +866,6 @@ const handleDeleteCategory = async (categoryId) => {
                       </tbody>
                     </table>
                     {filteredProducts.length === 0 && !isLoading && <p className="text-center py-4 text-gray-500">No se encontraron productos.</p>}
-                  </div>
-                }
-              </motion.div>
-            </TabsContent>
-
-            <TabsContent value="purchases">
-              <motion.div 
-                  initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                  className="bg-white p-6 shadow border border-gray-200 mb-8"
-              >
-                <h2 className="text-2xl font-semibold text-black mb-6">Gestión de Compras</h2>
-                <div className="mb-4 flex">
-                  <Input
-                    type="search"
-                    placeholder="Buscar compra..."
-                    value={searchTermPurchases}
-                    onChange={(e) => setSearchTermPurchases(e.target.value)}
-                    className="max-w-sm mr-2 border-gray-300 focus:border-black focus:ring-black"
-                  />
-                </div>
-
-                {isLoading && filteredPurchases.length === 0 ? <div className="flex justify-center py-4"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div></div> :
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left text-gray-500">
-                      <thead className="text-xs text-gray-700 uppercase bg-gray-50">
-                        <tr>
-                          <th scope="col" className="px-6 py-3">Nombre Compra</th>
-                          <th scope="col" className="px-6 py-3">Usuario</th>
-                          <th scope="col" className="px-6 py-3">Email Usuario</th>
-                          <th scope="col" className="px-6 py-3">Estado</th>
-                          <th scope="col" className="px-6 py-3">Fecha</th>
-                          <th scope="col" className="px-6 py-3">Acciones</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredPurchases.map(purchase => (
-                          <tr key={purchase.id} className="bg-white border-b hover:bg-gray-50">
-                            <td className="px-6 py-4 font-medium text-gray-900">{purchase.name}</td>
-                            <td className="px-6 py-4">{purchase.userName}</td>
-                            <td className="px-6 py-4">{purchase.user_email}</td>
-                            <td className="px-6 py-4">
-                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                  purchase.status === 'En preparación' ? 'bg-yellow-100 text-yellow-800' :
-                                  purchase.status === 'Enviado' ? 'bg-blue-100 text-blue-800' :
-                                  purchase.status === 'Finalizada' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                              }`}>
-                                  {purchase.status}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4">{new Date(purchase.created_at).toLocaleDateString()}</td>
-                            <td className="px-6 py-4">
-                            <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="border-blue-600 text-blue-600 hover:bg-blue-50 flex items-center gap-1"
-                                onClick={() => {
-                                  setEditPurchaseData(purchase);
-                                  setIsEditDialogOpen(true);
-                                }}
-                                disabled={isLoading}
-                              >
-                                <Pencil className="w-4 h-4" />
-                              </Button>
-
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-red-600 hover:bg-red-100 p-1.5"
-                                    disabled={isLoading}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Esta acción no se puede deshacer. Esto eliminará permanentemente la compra "{purchase.name}".
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => handleDeletePurchase(purchase.id)}
-                                      className="bg-red-600 hover:bg-red-700"
-                                    >
-                                      {isLoading && (
-                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                      )}
-                                      Eliminar
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </div>
-                          </td>
-
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    {filteredPurchases.length === 0 && !isLoading && <p className="text-center py-4 text-gray-500">No se encontraron compras.</p>}
                   </div>
                 }
               </motion.div>
@@ -912,102 +992,6 @@ const handleDeleteCategory = async (categoryId) => {
         </Tabs>
       </motion.div>
 
-      <Dialog open={isPurchaseDialogOpen} onOpenChange={setIsPurchaseDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-white">
-          <DialogHeader>
-            <DialogTitle>Crear Nueva Compra</DialogTitle>
-            <DialogDescription>
-              {selectedUserForPurchase ? `Añadir compra para ${selectedUserForPurchase.name || selectedUserForPurchase.email}.` : "Completa los detalles de la nueva compra."}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            {!selectedUserForPurchase && (
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="purchase-user-email" className="text-right">Email Usuario</Label>
-                <Input id="purchase-user-email" type="email" value={newPurchaseData.user_email} onChange={(e) => setNewPurchaseData({...newPurchaseData, user_email: e.target.value})} className="col-span-3 border-gray-300 focus:border-black focus:ring-black" placeholder="email@ejemplo.com" disabled={isLoading}/>
-              </div>
-            )}
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="purchase-name" className="text-right">Nombre Compra</Label>
-              <Input id="purchase-name" value={newPurchaseData.name} onChange={(e) => setNewPurchaseData({...newPurchaseData, name: e.target.value})} className="col-span-3 border-gray-300 focus:border-black focus:ring-black" placeholder="Ej: Pedido Especial San Valentín" disabled={isLoading}/>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="purchase-description" className="text-right">Descripción</Label>
-              <Textarea id="purchase-description" value={newPurchaseData.description} onChange={(e) => setNewPurchaseData({...newPurchaseData, description: e.target.value})} className="col-span-3 border-gray-300 focus:border-black focus:ring-black" placeholder="Detalles del pedido..." disabled={isLoading}/>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="purchase-status" className="text-right">Estado</Label>
-              <Select
-                value={newPurchaseData.status}
-                onValueChange={(value) => setNewPurchaseData({...newPurchaseData, status: value})}
-                disabled={isLoading}
-              >
-                <SelectTrigger className="col-span-3 border-gray-300 focus:border-black focus:ring-black">
-                  <SelectValue placeholder="Selecciona un estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  {purchaseStatusOptions.map(status => (
-                    <SelectItem key={status} value={status}>{status}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="outline" className="border-gray-300 text-black hover:bg-gray-100" disabled={isLoading}>Cancelar</Button>
-            </DialogClose>
-            <Button type="button" onClick={handleCreatePurchase} className="bg-black text-white hover:bg-gray-800" disabled={isLoading}>
-              {isLoading ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div> : <PlusCircle className="mr-2 h-4 w-4"/>} Crear Compra
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Editar Compra</DialogTitle>
-            <DialogDescription>Modifica los datos de la compra seleccionada.</DialogDescription>
-          </DialogHeader>
-          {editPurchaseData && (
-            <div className="space-y-4">
-              <div>
-                <Label>Nombre</Label>
-                <Input
-                  value={editPurchaseData.name}
-                  onChange={(e) => setEditPurchaseData({ ...editPurchaseData, name: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Descripción</Label>
-                <Textarea
-                  value={editPurchaseData.description || ''}
-                  onChange={(e) => setEditPurchaseData({ ...editPurchaseData, description: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Estado</Label>
-                <Select
-                  value={editPurchaseData.status}
-                  onValueChange={(value) => setEditPurchaseData({ ...editPurchaseData, status: value })}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Seleccionar estado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {purchaseStatusOptions.map(status => (
-                      <SelectItem key={status} value={status}>{status}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button onClick={handleEditPurchase} disabled={isLoading}>Guardar Cambios</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
       <Dialog open={isCategoryModalOpen} onOpenChange={setIsCategoryModalOpen}>
         <DialogContent>
           <CreateCategoryDialog

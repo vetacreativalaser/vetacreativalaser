@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { User, ShoppingBag, Mail, Star } from 'lucide-react';
+import { User, ShoppingBag, Mail, Star, LogOut, Package } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -10,8 +10,8 @@ import { useNavigate } from 'react-router-dom';
 import ProfileHeader from './components/ProfileHeader';
 import FavoritesSection from './components/FavoritesSection';
 import PersonalInfoTab from './components/PersonalInfoTab';
-import PurchasesTab from './components/PurchasesTab';
 import ReviewsTab from './components/ReviewsTab';
+import OrdersTab from './components/OrdersTab';
 
 const Profile = () => {
   const { user, logout } = useAuth();
@@ -61,12 +61,7 @@ const Profile = () => {
       const { data: productList } = await supabase.from('products').select('id, name');
       setProducts(productList || []);
 
-      const { data: purchaseData } = await supabase
-        .from('purchases')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-      setPurchases(purchaseData || []);
+
 
       await refreshReviews();
       setLoading(false);
@@ -84,108 +79,128 @@ const Profile = () => {
 
   if (loading || !user) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando perfil...</p>
+          <div className="w-12 h-12 border-3 border-gray-300 border-t-gray-900 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 text-sm">Cargando perfil...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50">
       <ProfileHeader user={user} isAdmin={isAdmin} />
 
-      <Tabs defaultValue="principal" className="space-y-6">
-        <TabsList className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full bg-white border border-gray-200 p-2 rounded-xl shadow-sm">
-          <TabsTrigger
-            value="principal"
-            className="flex flex-col items-center gap-1 text-xs sm:text-sm py-3 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 rounded-lg transition-all"
-          >
-            <User className="w-5 h-5" />
-            Principal
-          </TabsTrigger>
-          <TabsTrigger
-            value="info"
-            className="flex flex-col items-center gap-1 text-xs sm:text-sm py-3 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 rounded-lg transition-all"
-          >
-            <Mail className="w-5 h-5" />
-            Información
-          </TabsTrigger>
-          <TabsTrigger
-            value="compras"
-            className="flex flex-col items-center gap-1 text-xs sm:text-sm py-3 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 rounded-lg transition-all"
-          >
-            <ShoppingBag className="w-5 h-5" />
-            Compras
-          </TabsTrigger>
-          <TabsTrigger
-            value="reseñas"
-            className="flex flex-col items-center gap-1 text-xs sm:text-sm py-3 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 rounded-lg transition-all"
-          >
-            <Star className="w-5 h-5" />
-            Reseñas
-          </TabsTrigger>
-        </TabsList>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+        <Tabs defaultValue="principal" className="space-y-6">
+          <div className="flex justify-center sm:justify-start w-full overflow-x-auto">
+            <TabsList className="inline-flex h-auto p-1 bg-white border border-gray-200 rounded-lg shadow-sm">
+              <TabsTrigger
+                value="principal"
+                className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 text-sm font-medium text-gray-700 rounded-md data-[state=active]:bg-black data-[state=active]:text-white transition-colors min-w-[44px]"
+              >
+                <User className="w-4 h-4" />
+                <span className="hidden sm:inline">Principal</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="info"
+                className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 text-sm font-medium text-gray-700 rounded-md data-[state=active]:bg-black data-[state=active]:text-white transition-colors min-w-[44px]"
+              >
+                <Mail className="w-4 h-4" />
+                <span className="hidden sm:inline">Información</span>
+              </TabsTrigger>
+             
+              <TabsTrigger
+                value="pedidos"
+                className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 text-sm font-medium text-gray-700 rounded-md data-[state=active]:bg-black data-[state=active]:text-white transition-colors min-w-[44px]"
+              >
+                <Package className="w-4 h-4" />
+                <span className="hidden sm:inline">Pedidos</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="reseñas"
+                className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 text-sm font-medium text-gray-700 rounded-md data-[state=active]:bg-black data-[state=active]:text-white transition-colors min-w-[44px]"
+              >
+                <Star className="w-4 h-4" />
+                <span className="hidden sm:inline">Reseñas</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-        <TabsContent value="principal" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <FavoritesSection favorites={favorites} products={products} />
+          <TabsContent value="principal" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Estadísticas rápidas */}
+              <div className="lg:col-span-3 grid grid-cols-3 gap-4">
+                <div className="bg-white border border-gray-200 rounded-lg p-6 text-center">
+                  <div className="text-3xl font-bold text-gray-900">{purchases.length}</div>
+                  <div className="text-sm text-gray-600 mt-1">Compras</div>
+                </div>
+                <div className="bg-white border border-gray-200 rounded-lg p-6 text-center">
+                  <div className="text-3xl font-bold text-gray-900">{reviews.length}</div>
+                  <div className="text-sm text-gray-600 mt-1">Reseñas</div>
+                </div>
+                <div className="bg-white border border-gray-200 rounded-lg p-6 text-center">
+                  <div className="text-3xl font-bold text-gray-900">{favorites.length}</div>
+                  <div className="text-sm text-gray-600 mt-1">Favoritos</div>
+                </div>
+              </div>
 
-            <div className="p-6 bg-gradient-to-br from-blue-50 to-purple-50 border border-blue-100 shadow-sm rounded-2xl">
-              <h2 className="text-xl font-semibold text-gray-800 mb-3">
-                Bienvenido de vuelta
-              </h2>
-              <p className="text-gray-600 text-sm mb-4">
-                Gracias por ser parte de nuestra comunidad. Aquí puedes gestionar tus
-                compras, reseñas y favoritos.
-              </p>
-              <div className="grid grid-cols-3 gap-4 mt-6">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">
-                    {purchases.length}
+              {/* Favoritos */}
+              <div className="lg:col-span-2">
+                <FavoritesSection favorites={favorites} products={products} />
+              </div>
+
+              {/* Información rápida */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Mi cuenta</h2>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">Nombre</p>
+                    <p className="text-sm text-gray-900 font-medium mt-1">
+                      {formData.name || 'No especificado'}
+                    </p>
                   </div>
-                  <div className="text-xs text-gray-600 mt-1">Compras</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600">
-                    {reviews.length}
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">Email</p>
+                    <p className="text-sm text-gray-900 font-medium mt-1">{formData.email}</p>
                   </div>
-                  <div className="text-xs text-gray-600 mt-1">Reseñas</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-pink-600">
-                    {favorites.length}
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">Teléfono</p>
+                    <p className="text-sm text-gray-900 font-medium mt-1">
+                      {formData.phone || 'No especificado'}
+                    </p>
                   </div>
-                  <div className="text-xs text-gray-600 mt-1">Favoritos</div>
                 </div>
               </div>
             </div>
-          </div>
-        </TabsContent>
+          </TabsContent>
 
-        <TabsContent value="info">
-          <PersonalInfoTab user={user} formData={formData} setFormData={setFormData} />
-        </TabsContent>
+          <TabsContent value="info">
+            <PersonalInfoTab user={user} formData={formData} setFormData={setFormData} />
+          </TabsContent>
 
-        <TabsContent value="compras">
-          <PurchasesTab purchases={purchases} />
-        </TabsContent>
+ 
 
-        <TabsContent value="reseñas">
-          <ReviewsTab reviews={reviews} user={user} refreshReviews={refreshReviews} />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="pedidos">
+            <OrdersTab />
+          </TabsContent>
 
-      <div className="mt-8 flex justify-center">
-        <Button
-          variant="outline"
-          className="border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 px-8"
-          onClick={handleLogout}
-        >
-          Cerrar sesión
-        </Button>
+          <TabsContent value="reseñas">
+            <ReviewsTab reviews={reviews} user={user} refreshReviews={refreshReviews} />
+          </TabsContent>
+        </Tabs>
+
+        <div className="mt-8 pt-8 border-t border-gray-200">
+          <Button
+            variant="outline"
+            className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 hover:border-red-300"
+            onClick={handleLogout}
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Cerrar sesión
+          </Button>
+        </div>
       </div>
     </div>
   );

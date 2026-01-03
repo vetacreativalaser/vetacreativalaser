@@ -12,7 +12,19 @@
       "Bash(mkdir:*)",
       "Bash(supabase functions deploy:*)",
       "Bash(supabase functions logs:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(npm run dev:*)",
+      "Bash(if [ ! -d \"supabase/migrations\" ])",
+      "Bash(then mkdir -p supabase/migrations)",
+      "Bash(supabase secrets:*)",
+      "Bash(supabase db reset:*)",
+      "Bash(supabase db push:*)",
+      "Bash(supabase functions list:*)",
+      "Bash(supabase db dump:*)",
+      "Bash(supabase db execute:*)",
+      "Bash(supabase functions delete:*)",
+      "Bash(npm run build:*)",
+      "Bash(git add:*)"
     ]
   }
 }

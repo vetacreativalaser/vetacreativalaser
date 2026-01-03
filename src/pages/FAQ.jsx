@@ -32,7 +32,7 @@ const faqData = [
   },
   {
     question: "¿Cuál es su política de devoluciones?",
-    answer: "Para productos personalizados, solo aceptamos devoluciones si el producto llega dañado o hay un error por nuestra parte en la personalización. Para productos no personalizados, tienes 14 días para realizar una devolución. Consulta nuestros Términos y Condiciones para más detalles."
+    answer: "Para productos personalizados, solo aceptamos devoluciones si el producto llega dañado o hay un error por nuestra parte en la personalización. Consulta nuestros Términos y Condiciones para más detalles."
   }
 ];
 

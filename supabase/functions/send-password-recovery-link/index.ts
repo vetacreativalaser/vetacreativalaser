@@ -34,11 +34,34 @@ serve(async (req) => {
       });
     }
 
-    // Generar token de recuperación
+    // Verificar que el usuario existe
+    const { data: usersData, error: userError } = await supabase.auth.admin.listUsers();
+    if (userError) {
+      console.error('Error listando usuarios:', userError);
+      return new Response(JSON.stringify({ error: 'Error verificando usuario' }), {
+        status: 500,
+        headers: { 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+
+    const user = usersData.users.find((u) => u.email === email);
+    if (!user) {
+      // Por seguridad, no revelamos si el email existe o no
+      return new Response(JSON.stringify({ success: true }), {
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Content-Type': 'application/json'
+        }
+      });
+    }
+
+    // Generar token de recuperación con redirect URL
     const { data, error } = await supabase.auth.admin.generateLink({
       type: 'recovery',
       email,
-      options: { redirectTo: `https://vetacreativalaser.es/reset-password` }
+      options: {
+        redirectTo: `https://vetacreativalaser.es/reset-password`
+      }
     });
 
     if (error || !data?.properties?.hashed_token) {
@@ -49,22 +72,9 @@ serve(async (req) => {
       });
     }
 
-    const token = data.properties.hashed_token;
-    const url = `https://vetacreativalaser.es/reset-password?token=${token}`;
-
-    const expiresAt = new Date(Date.now() + 1000 * 60 * 30); // 30 minutos
-
-    const { error: insertError } = await supabase
-      .from('password_reset_tokens')
-      .insert([{ token, email, used: false, expires_at: expiresAt.toISOString() }]);
-
-    if (insertError) {
-      console.error('Error guardando token:', insertError.message);
-      return new Response(JSON.stringify({ error: 'No se pudo guardar el token' }), {
-        status: 500,
-        headers: { 'Access-Control-Allow-Origin': '*' }
-      });
-    }
+    // Usar el hashed_token para verificación OTP
+    const hashedToken = data.properties.hashed_token;
+    const resetUrl = `https://vetacreativalaser.es/reset-password?token=${hashedToken}&type=recovery`;
 
     await resend.emails.send({
       from: 'Veta Creativa <points@vetacreativalaser.es>',
@@ -77,15 +87,15 @@ serve(async (req) => {
             <p style="font-size: 16px; color: #333;">
               Has solicitado restablecer tu contraseña. Haz clic en el botón de abajo para continuar.
             </p>
-            <a href="${url}" style="display:inline-block; margin: 20px 0; padding: 12px 24px; background-color: #10b981; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">
+            <a href="${resetUrl}" style="display:inline-block; margin: 20px 0; padding: 12px 24px; background-color: #10b981; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">
               Restablecer contraseña
             </a>
             <p style="font-size: 14px; color: #777;">
-              Si no solicitaste este cambio, puedes ignorar este mensaje.
+              Si no solicitaste este cambio, puedes ignorar este mensaje. Este enlace expirará en 1 hora.
             </p>
             <hr style="margin: 30px 0;" />
             <p style="font-size: 12px; color: #aaa; text-align: center;">
-              No respondas a este correo. Para cualquier duda, escríbenos a 
+              No respondas a este correo. Para cualquier duda, escríbenos a
               <a href="mailto:vetacreativalaser@gmail.com" style="color: #10b981;">vetacreativalaser@gmail.com</a>.
             </p>
           </div>

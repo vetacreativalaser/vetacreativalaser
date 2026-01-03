@@ -8,23 +8,50 @@
 import { ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCartStore, useCartItemCount } from '@/store/useCartStore';
+import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 
 /**
  * CartTrigger Component
  *
  * Botón flotante con badge que muestra la cantidad de items
- * y abre el drawer del carrito al hacer click
+ * En móvil: redirige a /carrito
+ * En desktop/tablet: abre el drawer del carrito
  */
 export default function CartTrigger() {
   const openCart = useCartStore((state) => state.openCart);
   const itemCount = useCartItemCount();
+  const navigate = useNavigate();
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detectar si estamos en móvil
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640); // sm breakpoint de Tailwind
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  const handleClick = () => {
+    if (isMobile) {
+      // En móvil: ir directamente a la página del carrito
+      navigate('/carrito');
+    } else {
+      // En desktop/tablet: abrir el drawer
+      openCart();
+    }
+  };
 
   return (
     <Button
       variant="ghost"
       size="icon"
       className="relative hover:bg-transparent p-1"
-      onClick={openCart}
+      onClick={handleClick}
       aria-label={`Carrito de compras (${itemCount} items)`}
       type="button"
     >

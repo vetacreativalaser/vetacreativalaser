@@ -14,7 +14,7 @@ const Contact = lazy(() => import('@/pages/Contact'));
 const ProductDetail = lazy(() => import('@/pages/ProductDetail'));
 const FAQ = lazy(() => import('@/pages/FAQ'));
 const Wishlist = lazy(() => import('@/pages/Wishlist'));
-const Profile = lazy(() => import('@/pages/Profile'));
+const Profile = lazy(() => import('@/pages/profile/Profile'));
 const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
 const CreateProduct = lazy(() => import('@/pages/admin/CreateProduct.jsx'));
 const SearchResults = lazy(() => import('@/pages/SearchResults'));
