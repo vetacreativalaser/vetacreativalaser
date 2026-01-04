@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Heart, Share2, Pencil, ShoppingCart, TrendingDown } from 'lucide-react';
+import { ArrowLeft, Heart, Share2, Pencil, ShoppingCart, TrendingDown, AlertCircle } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
@@ -15,6 +15,7 @@ import { useCartStore } from '@/store/useCartStore';
 import { calculateUnitPrice, formatPrice, getTierInfo, normalizePriceConfig } from '@/lib/priceUtils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useShopPauseStatus } from '@/hooks/useShopPauseStatus';
 
 const ProductDetail = () => {
   const { id: productIdParam } = useParams();
@@ -39,6 +40,9 @@ const ProductDetail = () => {
 
   // Zustand store
   const { addItem, openCart } = useCartStore();
+
+  // Hook para verificar si las compras están pausadas
+  const { isPaused, pauseMessage } = useShopPauseStatus();
 
   const fetchReviews = async (id) => {
     setIsLoadingReview(true);
@@ -487,6 +491,16 @@ const ProductDetail = () => {
             </div>
           )}
 
+          {/* Mensaje de compras pausadas */}
+          {isPaused && pauseMessage && product.purchase_mode === 'standard' && (
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg mb-4">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-800 leading-relaxed">{pauseMessage}</p>
+              </div>
+            </div>
+          )}
+
           {/* Botón Añadir al Carrito / Contactar */}
           {product.purchase_mode === 'standard' ? (
             <Button
@@ -494,12 +508,13 @@ const ProductDetail = () => {
               className="w-full mb-6"
               onClick={handleAddToCart}
               disabled={
+                isPaused ||
                 !isCustomizationValid ||
                 (price?.type === 'byReason' && !selectedReason)
               }
             >
               <ShoppingCart className="w-5 h-5 mr-2" />
-              Añadir al carrito
+              {isPaused ? 'Compras Pausadas' : 'Añadir al carrito'}
             </Button>
           ) : (
             <Button
