@@ -80,22 +80,29 @@ const SeoRelTab = ({ formData, updateField }) => {
     setIsSearching(true);
 
     try {
+      // Normalizar query: sin acentos, minúsculas
       const normalizedQuery = searchQuery.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
+      // Obtener TODOS los productos activos (el filtrado se hará en cliente)
       const { data, error } = await supabase
         .from('products')
         .select('id, name, images')
-        .eq('status', 'active')
-        .ilike('name', `%${normalizedQuery}%`)
-        .limit(10);
+        .eq('status', 'active');
 
       if (error) throw error;
 
-      // Filtrar productos ya seleccionados y el producto actual (si existe)
+      // Filtrar en cliente: normalizar nombres y buscar coincidencia
       const relatedIds = formData.related_products || [];
-      const filtered = (data || []).filter(
-        p => !relatedIds.includes(p.id) && p.id !== formData.id
-      );
+      const filtered = (data || [])
+        .filter(p => {
+          // Excluir productos ya relacionados y el producto actual
+          if (relatedIds.includes(p.id) || p.id === formData.id) return false;
+
+          // Normalizar nombre del producto y buscar coincidencia
+          const normalizedName = p.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+          return normalizedName.includes(normalizedQuery);
+        })
+        .slice(0, 10); // Limitar a 10 resultados
 
       setSearchResults(filtered);
     } catch (error) {
