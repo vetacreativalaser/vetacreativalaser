@@ -77,6 +77,30 @@ Esto creará:
 - ✅ Funciones auxiliares
 - ✅ Datos iniciales (seed data)
 
+### 3.2.1 Aplicar Correcciones de Seguridad
+
+**IMPORTANTE**: Después de ejecutar el schema principal, ejecuta las correcciones de seguridad:
+
+1. En el mismo SQL Editor de Supabase
+2. Copia todo el contenido de `supabase/fix_security_issues.sql`
+3. Pégalo en el editor SQL
+4. Ejecuta el script (Run)
+5. Verifica que aparezca el mensaje de confirmación
+
+Esto corregirá:
+- ✅ search_path en todas las funciones (seguridad contra ataques de injection)
+- ✅ Moverá la extensión pg_net al schema extensions
+- ✅ Verificará RLS en shipping_rates
+
+### 3.2.2 Configurar Seguridad de Autenticación
+
+Sigue la guía completa en [supabase/SECURITY_CONFIG_GUIDE.md](supabase/SECURITY_CONFIG_GUIDE.md) para:
+
+- ⏰ Configurar OTP expiry a menos de 1 hora
+- 🔒 Habilitar verificación de contraseñas contra HaveIBeenPwned
+- 🔐 Habilitar opciones MFA adicionales (TOTP recomendado)
+- ⬆️ Actualizar PostgreSQL a la última versión con parches de seguridad
+
 ### 3.3 Configurar Storage Buckets
 
 En Supabase Dashboard → Storage, crea los siguientes buckets **públicos**:

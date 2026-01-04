@@ -267,7 +267,8 @@ BEGIN
   NEW.updated_at = NOW();
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql
+SET search_path = public, pg_temp;
 
 CREATE TRIGGER update_categorias_updated_at BEFORE UPDATE ON categorias
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -294,7 +295,8 @@ BEGIN
   DELETE FROM password_reset_tokens
   WHERE expires_at < NOW() OR (used = true AND created_at < NOW() - INTERVAL '7 days');
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public, pg_temp;
 
 -- Función RPC para obtener pedidos con información de usuario
 CREATE OR REPLACE FUNCTION get_orders_with_user_info()
@@ -331,7 +333,8 @@ BEGIN
   LEFT JOIN profiles p ON o.user_id = p.id
   ORDER BY o.created_at DESC;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public, pg_temp;
 
 -- =====================================================
 -- STORAGE BUCKETS
