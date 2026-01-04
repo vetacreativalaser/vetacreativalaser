@@ -72,6 +72,48 @@ const ProductForm = ({ open, onOpenChange, product = null, onSaved }) => {
   // Cargar datos del producto si estamos editando, o restaurar borrador
   useEffect(() => {
     if (product) {
+      // Normalizar precio (puede venir como string JSON o como objeto)
+      let normalizedPrice = { type: 'fixed', value: 0 };
+      if (product.price) {
+        if (typeof product.price === 'string') {
+          try {
+            normalizedPrice = JSON.parse(product.price);
+          } catch (e) {
+            console.error('Error parsing price:', e);
+          }
+        } else if (typeof product.price === 'object') {
+          normalizedPrice = product.price;
+        }
+      }
+
+      // Normalizar custom_fields (puede venir como string JSON o como array)
+      let normalizedCustomFields = [];
+      if (product.custom_fields) {
+        if (typeof product.custom_fields === 'string') {
+          try {
+            normalizedCustomFields = JSON.parse(product.custom_fields);
+          } catch (e) {
+            console.error('Error parsing custom_fields:', e);
+          }
+        } else if (Array.isArray(product.custom_fields)) {
+          normalizedCustomFields = product.custom_fields;
+        }
+      }
+
+      // Normalizar specifications (puede venir como string JSON o como array)
+      let normalizedSpecifications = [];
+      if (product.specifications) {
+        if (typeof product.specifications === 'string') {
+          try {
+            normalizedSpecifications = JSON.parse(product.specifications);
+          } catch (e) {
+            console.error('Error parsing specifications:', e);
+          }
+        } else if (Array.isArray(product.specifications)) {
+          normalizedSpecifications = product.specifications;
+        }
+      }
+
       // Modo edición: cargar datos del producto
       setFormData({
         name: product.name || '',
@@ -82,7 +124,7 @@ const ProductForm = ({ open, onOpenChange, product = null, onSaved }) => {
         is_featured: product.is_featured || false,
         purchase_mode: product.purchase_mode || 'standard',
 
-        price: product.price || { type: 'fixed', value: 0 },
+        price: normalizedPrice,
 
         shipping_length: product.shipping_length || null,
         shipping_width: product.shipping_width || null,
@@ -91,8 +133,8 @@ const ProductForm = ({ open, onOpenChange, product = null, onSaved }) => {
         stripe_product_id: product.stripe_product_id || null,
         stripe_price_id: product.stripe_price_id || null,
 
-        custom_fields: product.custom_fields || [],
-        specifications: product.specifications || [],
+        custom_fields: normalizedCustomFields,
+        specifications: normalizedSpecifications,
         // Normalizar imágenes (de arrays separados a array unificado)
         images: normalizeImages(product),
 
