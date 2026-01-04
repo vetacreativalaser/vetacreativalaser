@@ -8,11 +8,16 @@ import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import CartTrigger from '@/components/commerce/cart/CartTrigger';
+import { supabase } from '@/lib/supabaseClient';
+import { formatPrice } from '@/lib/priceUtils';
 
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const searchRef = useRef(null);
@@ -33,12 +38,49 @@ const Header = () => {
     if (isMobileMenuOpen) setIsMobileMenuOpen(false);
   }
 
+  // Buscar productos mientras escribes (debounced)
+  useEffect(() => {
+    const searchProducts = async () => {
+      if (!searchTerm.trim() || searchTerm.trim().length < 2) {
+        setSearchResults([]);
+        setShowDropdown(false);
+        return;
+      }
+
+      setIsSearching(true);
+      const normalizedQuery = searchTerm.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      const lowerQuery = `%${normalizedQuery}%`;
+
+      try {
+        const { data, error } = await supabase
+          .from('products')
+          .select('id, name, price, images, image_urls, image_alts')
+          .eq('status', 'active')
+          .or(`name.ilike.${lowerQuery},full_description.ilike.${lowerQuery}`)
+          .limit(5);
+
+        if (error) throw error;
+        setSearchResults(data || []);
+        setShowDropdown(true);
+      } catch (error) {
+        console.error('Error buscando productos:', error);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    const timeoutId = setTimeout(searchProducts, 300);
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
+
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (searchTerm.trim()) {
       navigate(`/buscar?q=${encodeURIComponent(searchTerm.trim())}`);
       setIsSearchOpen(false);
       setSearchTerm('');
+      setShowDropdown(false);
     } else {
       toast({
         title: "Búsqueda vacía",
@@ -47,11 +89,19 @@ const Header = () => {
       });
     }
   };
+
+  const handleResultClick = (productId) => {
+    navigate(`/productos/${productId}`);
+    setIsSearchOpen(false);
+    setSearchTerm('');
+    setShowDropdown(false);
+  };
   
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (searchRef.current && !searchRef.current.contains(event.target) && isSearchOpen && !event.target.closest('.search-trigger-button')) {
         setIsSearchOpen(false);
+        setShowDropdown(false);
       }
       if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target) && isMobileMenuOpen && !event.target.closest('.mobile-menu-trigger') && !event.target.closest('header')) {
         setIsMobileMenuOpen(false);
@@ -62,8 +112,9 @@ const Header = () => {
   }, [isSearchOpen, isMobileMenuOpen]);
 
   useEffect(() => {
-    setIsMobileMenuOpen(false); 
+    setIsMobileMenuOpen(false);
     setIsSearchOpen(false);
+    setShowDropdown(false);
   }, [location.pathname]);
 
   const handleProfileIconClick = () => {
@@ -234,12 +285,12 @@ const Header = () => {
             style={{ boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)' }}
           >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-              <motion.form 
+              <motion.form
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1, duration: 0.3 }}
-                onSubmit={handleSearchSubmit} 
-                className="max-w-xl mx-auto flex"
+                onSubmit={handleSearchSubmit}
+                className="max-w-xl mx-auto flex relative"
               >
                 <Input
                   type="search"
@@ -249,6 +300,86 @@ const Header = () => {
                   className="flex-grow border-gray-300 focus:border-black focus:ring-black text-base"
                   autoFocus
                 />
+
+                {/* Dropdown de resultados */}
+                <AnimatePresence>
+                  {showDropdown && searchResults.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden z-50"
+                    >
+                      {searchResults.map((product) => (
+                        <button
+                          key={product.id}
+                          type="button"
+                          onClick={() => handleResultClick(product.id)}
+                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0 text-left"
+                        >
+                          {/* Imagen del producto */}
+                          <div className="w-12 h-12 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
+                            <img
+                              src={(() => {
+                                if (product.images?.[0]?.url) {
+                                  return product.images[0].url;
+                                }
+                                try {
+                                  const urls = typeof product.image_urls === 'string'
+                                    ? JSON.parse(product.image_urls)
+                                    : product.image_urls;
+                                  return Array.isArray(urls) && urls.length > 0 ? urls[0] : '';
+                                } catch {
+                                  return '';
+                                }
+                              })()}
+                              alt={product.images?.[0]?.alt || product.image_alts?.[0] || product.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+
+                          {/* Info del producto */}
+                          <div className="flex-grow min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {product.name}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {(() => {
+                                try {
+                                  const parsed = typeof product.price === 'string'
+                                    ? JSON.parse(product.price)
+                                    : product.price;
+                                  if (parsed?.type === 'fixed') {
+                                    return formatPrice(parsed.value || parsed.fixedPrice);
+                                  }
+                                  return 'Precio variable';
+                                } catch {
+                                  return 'Precio variable';
+                                }
+                              })()}
+                            </p>
+                          </div>
+                        </button>
+                      ))}
+
+                      {/* Ver todos los resultados */}
+                      <button
+                        type="submit"
+                        className="w-full px-4 py-3 text-sm text-center text-black font-medium hover:bg-gray-50 transition-colors border-t border-gray-200"
+                      >
+                        Ver todos los resultados
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Indicador de carga */}
+                {isSearching && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
+                  </div>
+                )}
               </motion.form>
             </div>
           </motion.div>
