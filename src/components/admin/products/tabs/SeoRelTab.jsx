@@ -92,8 +92,9 @@ const SeoRelTab = ({ formData, updateField }) => {
       if (error) throw error;
 
       // Filtrar productos ya seleccionados y el producto actual (si existe)
+      const relatedIds = formData.related_products || [];
       const filtered = (data || []).filter(
-        p => !formData.related_products.includes(p.id) && p.id !== formData.id
+        p => !relatedIds.includes(p.id) && p.id !== formData.id
       );
 
       setSearchResults(filtered);
@@ -106,7 +107,8 @@ const SeoRelTab = ({ formData, updateField }) => {
 
   // Añadir producto relacionado
   const addRelatedProduct = (product) => {
-    updateField('related_products', [...formData.related_products, product.id]);
+    const relatedIds = formData.related_products || [];
+    updateField('related_products', [...relatedIds, product.id]);
     setSelectedProducts([...selectedProducts, product]);
     setSearchQuery('');
     setSearchResults([]);
@@ -114,7 +116,8 @@ const SeoRelTab = ({ formData, updateField }) => {
 
   // Eliminar producto relacionado
   const removeRelatedProduct = (productId) => {
-    updateField('related_products', formData.related_products.filter(id => id !== productId));
+    const relatedIds = formData.related_products || [];
+    updateField('related_products', relatedIds.filter(id => id !== productId));
     setSelectedProducts(selectedProducts.filter(p => p.id !== productId));
   };
 
