@@ -278,7 +278,26 @@ serve(async (req) => {
       throw new Error('El carrito está vacío');
     }
 
-    // 3. Obtener datos de productos desde DB
+    // 3.5. Verificar si las compras están pausadas
+    const { data: shopConfig, error: configError } = await supabaseClient
+      .from('app_config')
+      .select('key, value')
+      .in('key', ['shop_paused', 'shop_pause_message']);
+
+    if (!configError && shopConfig) {
+      const pausedConfig = shopConfig.find(c => c.key === 'shop_paused');
+      const isPaused = pausedConfig?.value === true || pausedConfig?.value === 'true';
+
+      if (isPaused) {
+        const messageConfig = shopConfig.find(c => c.key === 'shop_pause_message');
+        const pauseMessage = messageConfig?.value || 'Las compras online están pausadas temporalmente.';
+
+        console.log('🚫 Compras pausadas - rechazando checkout');
+        throw new Error(pauseMessage);
+      }
+    }
+
+    // 4. Obtener datos de productos desde DB
     const productIds = cartItems.map((item) => item.productId);
     const { data: products, error: dbError } = await supabaseClient
       .from('products')
