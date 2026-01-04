@@ -415,6 +415,7 @@ const ProductForm = ({ open, onOpenChange, product = null, onSaved }) => {
         stripe_price_id: stripePriceId,
 
         custom_fields: formData.custom_fields,
+        specifications: formData.specifications,
         images: formData.images,
 
         slug,

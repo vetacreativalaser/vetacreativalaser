@@ -66,10 +66,26 @@ export default function ProductCustomizer({ customFields, values, onValuesChange
   }
 
   /**
+   * Verifica si un campo debe mostrarse según sus condiciones
+   */
+  const shouldShowField = (field) => {
+    if (!field.conditionalOn) return true;
+
+    const { fieldId, value: requiredValue } = field.conditionalOn;
+    const parentField = customFields.find(f => f.id === fieldId);
+    if (!parentField) return true;
+
+    const parentValue = values[parentField.label];
+    return parentValue === requiredValue;
+  };
+
+  /**
    * Valida si todos los campos requeridos están completos
    */
   const validateFields = (currentValues) => {
     return customFields.every(field => {
+      // Solo validar campos visibles
+      if (!shouldShowField(field)) return true;
       if (!field.required) return true;
 
       const value = currentValues[field.label];
@@ -170,11 +186,19 @@ export default function ProductCustomizer({ customFields, values, onValuesChange
               <SelectValue placeholder={field.placeholder || 'Selecciona una opción'} />
             </SelectTrigger>
             <SelectContent>
-              {field.options.map((option) => (
-                <SelectItem key={option} value={option}>
-                  {option}
-                </SelectItem>
-              ))}
+              {field.options.map((opt, idx) => {
+                // Soportar formato antiguo (string) y nuevo (objeto)
+                const option = typeof opt === 'string' ? { value: opt, label: opt, extraCost: 0 } : opt;
+                const displayLabel = option.extraCost > 0
+                  ? `${option.label} (+${option.extraCost.toFixed(2)}€)`
+                  : option.label;
+
+                return (
+                  <SelectItem key={idx} value={option.value}>
+                    {displayLabel}
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         );
@@ -201,7 +225,7 @@ export default function ProductCustomizer({ customFields, values, onValuesChange
 
       {/* Campos dinámicos */}
       <div className="space-y-4">
-        {customFields.map((field, index) => (
+        {customFields.filter(shouldShowField).map((field, index) => (
           <div key={`${field.label}-${index}`} className="space-y-2">
             <Label
               htmlFor={`custom-field-${field.label.toLowerCase().replace(/\s+/g, '-')}`}

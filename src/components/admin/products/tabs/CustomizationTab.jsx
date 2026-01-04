@@ -73,7 +73,8 @@ const CustomizationTab = ({ formData, updateField }) => {
       placeholder: '',
       required: false,
       extraCost: 0,
-      options: [] // Solo para select
+      options: [], // Solo para select
+      conditionalOn: null, // {fieldId: string, value: string} - Se muestra solo si otro campo tiene cierto valor
     };
 
     updateField('custom_fields', [...customFields, newField]);
@@ -120,17 +121,30 @@ const CustomizationTab = ({ formData, updateField }) => {
     const field = customFields.find(f => f.id === fieldId);
     if (!field) return;
 
-    const newOptions = [...(field.options || []), ''];
+    const newOption = {
+      value: '',
+      label: '',
+      extraCost: 0,
+      showFields: [] // IDs de campos que se mostrarán si se selecciona esta opción
+    };
+    const newOptions = [...(field.options || []), newOption];
     updateCustomField(fieldId, 'options', newOptions);
   };
 
   // Actualizar opción de select
-  const updateSelectOption = (fieldId, optionIndex, value) => {
+  const updateSelectOption = (fieldId, optionIndex, property, value) => {
     const field = customFields.find(f => f.id === fieldId);
     if (!field) return;
 
-    const newOptions = [...(field.options || [])];
-    newOptions[optionIndex] = value;
+    const newOptions = [...(field.options || [])].map((opt, i) => {
+      // Convertir opciones antiguas (string) a nuevo formato (objeto)
+      const option = typeof opt === 'string' ? { value: opt, label: opt, extraCost: 0, showFields: [] } : opt;
+
+      if (i === optionIndex) {
+        return { ...option, [property]: value };
+      }
+      return option;
+    });
     updateCustomField(fieldId, 'options', newOptions);
   };
 
@@ -336,6 +350,71 @@ const CustomizationTab = ({ formData, updateField }) => {
                       </Label>
                     </div>
 
+                    {/* Configuración de campo condicional */}
+                    <div className="space-y-2 pt-3 border-t border-gray-200">
+                      <Label className="text-xs text-gray-600">Mostrar campo condicionalmente</Label>
+                      <div className="space-y-2">
+                        <Select
+                          value={field.conditionalOn?.fieldId || 'none'}
+                          onValueChange={(value) => {
+                            if (value === 'none') {
+                              updateCustomField(field.id, 'conditionalOn', null);
+                            } else {
+                              updateCustomField(field.id, 'conditionalOn', { fieldId: value, value: '' });
+                            }
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Siempre visible" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Siempre visible</SelectItem>
+                            {customFields
+                              .filter(f => f.id !== field.id && f.type === 'select')
+                              .map(f => (
+                                <SelectItem key={f.id} value={f.id}>
+                                  Solo si "{f.label || 'Sin nombre'}" es...
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+
+                        {field.conditionalOn?.fieldId && (() => {
+                          const parentField = customFields.find(f => f.id === field.conditionalOn.fieldId);
+                          if (!parentField || !parentField.options) return null;
+
+                          return (
+                            <Select
+                              value={field.conditionalOn.value || ''}
+                              onValueChange={(value) => {
+                                updateCustomField(field.id, 'conditionalOn', { ...field.conditionalOn, value });
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecciona un valor" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {parentField.options.map((opt, idx) => {
+                                  const option = typeof opt === 'string' ? { value: opt, label: opt } : opt;
+                                  return (
+                                    <SelectItem key={idx} value={option.value}>
+                                      {option.label || option.value}
+                                    </SelectItem>
+                                  );
+                                })}
+                              </SelectContent>
+                            </Select>
+                          );
+                        })()}
+
+                        {field.conditionalOn?.fieldId && field.conditionalOn?.value && (
+                          <p className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
+                            Este campo solo se mostrará cuando "{customFields.find(f => f.id === field.conditionalOn.fieldId)?.label}" sea "{field.conditionalOn.value}"
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
                     {/* Opciones para select */}
                     {field.type === 'select' && (
                       <div className="space-y-3 pt-3 border-t border-gray-200">
@@ -353,26 +432,53 @@ const CustomizationTab = ({ formData, updateField }) => {
                         </div>
 
                         {field.options && field.options.length > 0 ? (
-                          <div className="space-y-2">
-                            {(field.options || []).map((option, optIndex) => (
-                              <div key={optIndex} className="flex items-center gap-2">
-                                <Input
-                                  placeholder={`Opción ${optIndex + 1}`}
-                                  value={option}
-                                  onChange={(e) => updateSelectOption(field.id, optIndex, e.target.value)}
-                                  className="flex-1"
-                                />
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => removeSelectOption(field.id, optIndex)}
-                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            ))}
+                          <div className="space-y-3">
+                            {(field.options || []).map((opt, optIndex) => {
+                              // Normalizar opción (soportar formato antiguo string y nuevo objeto)
+                              const option = typeof opt === 'string' ? { value: opt, label: opt, extraCost: 0 } : opt;
+
+                              return (
+                                <div key={optIndex} className="border border-gray-200 rounded-lg p-3 space-y-2 bg-gray-50">
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      placeholder={`Opción ${optIndex + 1}`}
+                                      value={option.label || option.value || ''}
+                                      onChange={(e) => {
+                                        updateSelectOption(field.id, optIndex, 'label', e.target.value);
+                                        updateSelectOption(field.id, optIndex, 'value', e.target.value);
+                                      }}
+                                      className="flex-1"
+                                    />
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => removeSelectOption(field.id, optIndex)}
+                                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+
+                                  {/* Coste extra de la opción */}
+                                  <div className="flex items-center gap-2">
+                                    <Label className="text-xs text-gray-600 whitespace-nowrap">Coste extra:</Label>
+                                    <div className="relative flex-1">
+                                      <Input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        placeholder="0.00"
+                                        value={option.extraCost || 0}
+                                        onChange={(e) => updateSelectOption(field.id, optIndex, 'extraCost', parseFloat(e.target.value) || 0)}
+                                        className="pr-8"
+                                      />
+                                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">€</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         ) : (
                           <p className="text-xs text-gray-500 italic">
