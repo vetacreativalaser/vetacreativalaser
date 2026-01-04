@@ -842,6 +842,7 @@ const handleDeleteCategory = async (categoryId) => {
                         <tr>
                           <th scope="col" className="px-6 py-3">Nombre</th>
                           <th scope="col" className="px-6 py-3">Categoría</th>
+                          <th scope="col" className="px-6 py-3">Estado</th>
                           <th scope="col" className="px-6 py-3">Precio</th>
                           <th scope="col" className="px-6 py-3">Acciones</th>
                         </tr>
@@ -850,7 +851,23 @@ const handleDeleteCategory = async (categoryId) => {
                         {filteredProducts.map(product => (
                           <tr key={product.id} className="bg-white border-b hover:bg-gray-50">
                             <td className="px-6 py-4 font-medium text-gray-900">{product.name}</td>
-                            <td>{product.categorias?.categoria || 'Sin categoría'}</td>
+                            <td className="px-6 py-4">{product.categorias?.categoria || 'Sin categoría'}</td>
+                            <td className="px-6 py-4">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                product.status === 'active' ? 'bg-green-100 text-green-800' :
+                                product.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                <span className={`w-2 h-2 rounded-full mr-1.5 ${
+                                  product.status === 'active' ? 'bg-green-500' :
+                                  product.status === 'draft' ? 'bg-yellow-500' :
+                                  'bg-gray-400'
+                                }`}></span>
+                                {product.status === 'active' ? 'Activo' :
+                                 product.status === 'draft' ? 'Borrador' :
+                                 'Archivado'}
+                              </span>
+                            </td>
                             <td className="px-6 py-4">
                               {(() => {
                                 try {
