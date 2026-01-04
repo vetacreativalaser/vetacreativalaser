@@ -62,8 +62,7 @@ const ShopConfigPanel = () => {
         .from('app_config')
         .upsert({
           key: 'shop_paused',
-          value: isPaused,
-          description: 'Indica si las compras online están pausadas'
+          value: isPaused
         }, {
           onConflict: 'key'
         });
@@ -75,11 +74,11 @@ const ShopConfigPanel = () => {
         .from('app_config')
         .upsert({
           key: 'shop_pause_message',
-          value: pauseMessage || defaultMessage,
-          description: 'Mensaje mostrado cuando las compras están pausadas'
+          value: pauseMessage || defaultMessage
         }, {
           onConflict: 'key'
         });
+
 
       if (messageError) throw messageError;
 
