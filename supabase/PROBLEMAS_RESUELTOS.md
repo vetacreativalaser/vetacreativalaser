@@ -6,7 +6,7 @@ Este documento detalla los problemas de seguridad detectados por el Security Adv
 
 **Fecha de detección**: 2026-01-04
 **Total de problemas**: 8
-**Estado**: ✅ Todos los problemas abordados
+**Estado**: ✅ Resueltos automáticamente: 2 | ⚠️ Limitación ignorable: 1 | ⏰ Requieren config manual: 4 | ⬆️ Actualización: 1
 
 ---
 
@@ -79,38 +79,36 @@ WHERE proname IN ('update_product_category_name', 'generate_sku', 'update_order_
 
 ---
 
-### 3. ✅ Extensión pg_net en schema public
+### 3. ⚠️ Extensión pg_net en schema public
 
 **Problema Original:**
 > Extension `pg_net` is installed in the public schema. Move it to another schema.
 
-**Estado**: ✅ RESUELTO
+**Estado**: ⚠️ LIMITACIÓN DE SUPABASE - PUEDE IGNORARSE
 
 **Explicación del problema:**
-Tener extensiones en el schema `public` puede causar conflictos y problemas de seguridad, ya que es accesible por defecto a todos los roles.
+La extensión `pg_net` **no puede moverse** del schema `public` en bases de datos gestionadas por Supabase debido a limitaciones técnicas:
+
+- `pg_net` no soporta `ALTER EXTENSION SET SCHEMA`
+- Es una extensión gestionada por Supabase (no por el usuario)
+- Requiere permisos de superuser para recrearla manualmente
+- En el contexto de Supabase managed database, **no representa un riesgo real de seguridad**
 
 **Solución implementada:**
-El script [`fix_security_issues.sql`](fix_security_issues.sql) realiza:
+El script [`fix_security_issues.sql`](fix_security_issues.sql) incluye:
 
-1. Crea schema `extensions` si no existe
-2. Mueve `pg_net` al schema `extensions`
-3. Otorga permisos necesarios a los roles
+1. Documentación del problema
+2. Explicación de por qué puede ignorarse
+3. Mensaje informativo al ejecutar el script
 
-**Código aplicado:**
-```sql
-CREATE SCHEMA IF NOT EXISTS extensions;
-ALTER EXTENSION pg_net SET SCHEMA extensions;
-GRANT USAGE ON SCHEMA extensions TO postgres, anon, authenticated, service_role;
-```
+**Por qué puede ignorarse:**
+1. Supabase gestiona esta extensión automáticamente
+2. No tienes permisos para moverla (y no los necesitas)
+3. La ubicación en `public` está controlada y no es explotable en Supabase managed databases
 
-**Verificación:**
-```sql
-SELECT extname, nspname
-FROM pg_extension e
-JOIN pg_namespace n ON e.extnamespace = n.oid
-WHERE extname = 'pg_net';
--- Debe devolver nspname = 'extensions'
-```
+**Referencia:**
+- [GitHub Discussion #9314](https://github.com/supabase/supabase/discussions/9314)
+- Ver detalles en [SECURITY_CONFIG_GUIDE.md](SECURITY_CONFIG_GUIDE.md#2-extensión-pg_net-en-schema-public)
 
 ---
 
@@ -217,7 +215,14 @@ Para un proyecto nuevo, sigue este orden:
 
 1. ✅ Ejecutar [`00_complete_schema.sql`](00_complete_schema.sql)
 2. ✅ Ejecutar [`fix_security_issues.sql`](fix_security_issues.sql)
+   - Corregirá search_path en funciones
+   - Verificará RLS en todas las tablas
+   - Mostrará advertencia sobre pg_net (ignorable)
 3. ⚠️ Seguir pasos manuales en [SECURITY_CONFIG_GUIDE.md](SECURITY_CONFIG_GUIDE.md)
+   - Configurar OTP expiry
+   - Habilitar HaveIBeenPwned
+   - Habilitar MFA (TOTP recomendado)
+   - Actualizar PostgreSQL
 4. ✅ Verificar con checklist de seguridad
 
 ---

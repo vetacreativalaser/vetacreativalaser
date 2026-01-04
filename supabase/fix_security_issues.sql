@@ -63,22 +63,29 @@ END $$;
 -- 2. MOVER EXTENSIÓN PG_NET FUERA DE PUBLIC SCHEMA
 -- =====================================================
 
--- Crear schema extensions si no existe
-CREATE SCHEMA IF NOT EXISTS extensions;
+-- NOTA: La extensión pg_net no soporta ALTER EXTENSION SET SCHEMA
+-- Esto es una limitación conocida de Supabase y no puede resolverse via SQL
+-- Referencia: https://github.com/supabase/supabase/discussions/9314
+--
+-- SOLUCIÓN ALTERNATIVA:
+-- Este problema debe ser ignorado ya que es una configuración controlada por Supabase.
+-- La extensión pg_net es gestionada por Supabase y su ubicación en el schema public
+-- no representa un riesgo de seguridad real en el contexto de Supabase managed database.
+--
+-- Si aún así deseas mover la extensión, debes:
+-- 1. Contactar a Supabase Support
+-- 2. O recrear la extensión manualmente (requiere permisos de superuser que no tenemos)
 
--- Mover pg_net si existe
 DO $$
 BEGIN
-    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_net') THEN
-        ALTER EXTENSION pg_net SET SCHEMA extensions;
-    END IF;
+    RAISE NOTICE '';
+    RAISE NOTICE '⚠️  ADVERTENCIA: Extensión pg_net';
+    RAISE NOTICE 'La extensión pg_net no puede moverse del schema public automáticamente.';
+    RAISE NOTICE 'Esto es una limitación de Supabase managed databases.';
+    RAISE NOTICE 'Este warning puede ser ignorado de forma segura.';
+    RAISE NOTICE 'Referencia: https://github.com/supabase/supabase/discussions/9314';
+    RAISE NOTICE '';
 END $$;
-
--- Otorgar permisos necesarios
-GRANT USAGE ON SCHEMA extensions TO postgres, anon, authenticated, service_role;
-GRANT ALL ON ALL TABLES IN SCHEMA extensions TO postgres, anon, authenticated, service_role;
-GRANT ALL ON ALL SEQUENCES IN SCHEMA extensions TO postgres, anon, authenticated, service_role;
-GRANT ALL ON ALL ROUTINES IN SCHEMA extensions TO postgres, anon, authenticated, service_role;
 
 -- 3. VERIFICAR RLS EN SHIPPING_RATES (YA DEBERÍA ESTAR HABILITADO)
 -- =====================================================
@@ -118,7 +125,7 @@ BEGIN
     RAISE NOTICE '';
     RAISE NOTICE '📋 Acciones completadas:';
     RAISE NOTICE '1. ✅ Corregido search_path en funciones existentes';
-    RAISE NOTICE '2. ✅ Movida extensión pg_net a schema extensions';
+    RAISE NOTICE '2. ⚠️  Extensión pg_net no puede moverse (limitación de Supabase - puede ignorarse)';
     RAISE NOTICE '3. ✅ Verificado RLS en shipping_rates';
     RAISE NOTICE '';
     RAISE NOTICE '⚠️  Configuraciones pendientes (requieren Dashboard de Supabase):';
@@ -126,4 +133,6 @@ BEGIN
     RAISE NOTICE '5. 🔒 Habilitar verificación HaveIBeenPwned';
     RAISE NOTICE '6. 🔐 Habilitar más opciones MFA';
     RAISE NOTICE '7. ⬆️  Actualizar PostgreSQL a la última versión';
+    RAISE NOTICE '';
+    RAISE NOTICE 'ℹ️  Consulta SECURITY_CONFIG_GUIDE.md para más detalles';
 END $$;

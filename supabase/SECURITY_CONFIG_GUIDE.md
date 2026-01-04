@@ -31,12 +31,47 @@ Esta guía detalla cómo resolver los problemas de seguridad detectados en el pr
 
 **Esto corregirá:**
 - ✅ search_path en todas las funciones
-- ✅ Moverá pg_net al schema `extensions`
+- ⚠️ Advertirá sobre pg_net (limitación de Supabase - puede ignorarse)
 - ✅ Verificará RLS en shipping_rates
 
 ---
 
-## 2. Configurar OTP Expiry (Email)
+## 2. Extensión pg_net en Schema Public
+
+### Problema
+> *Extension `pg_net` is installed in the public schema. Move it to another schema.*
+
+### Estado
+⚠️ **LIMITACIÓN DE SUPABASE - PUEDE IGNORARSE**
+
+### Explicación
+
+La extensión `pg_net` **no puede moverse** del schema `public` en bases de datos gestionadas por Supabase. Esto es una limitación conocida:
+
+- `pg_net` no soporta `ALTER EXTENSION SET SCHEMA`
+- Es una extensión gestionada por Supabase (no por el usuario)
+- Requiere permisos de superuser para recrearla
+- En el contexto de Supabase managed database, **no representa un riesgo real de seguridad**
+
+### ¿Qué hacer?
+
+**Puedes ignorar este warning de forma segura**. Es una falsa alarma del Security Advisor debido a que:
+
+1. Supabase gestiona esta extensión automáticamente
+2. No tienes permisos para moverla (y no los necesitas)
+3. La ubicación en `public` está controlada y no es explotable
+
+### Si realmente quieres resolverlo
+
+La única forma es contactar a [Supabase Support](https://supabase.com/support) y pedirles que:
+- Muevan la extensión manualmente
+- O expliquen por qué el warning puede ignorarse
+
+**Referencia**: [GitHub Discussion #9314](https://github.com/supabase/supabase/discussions/9314)
+
+---
+
+## 3. Configurar OTP Expiry (Email)
 
 ### Ubicación
 **Dashboard → Authentication → Providers → Email**
@@ -60,7 +95,7 @@ Los tokens de un solo uso (OTP) deben tener una vida útil corta para reducir la
 
 ---
 
-## 3. Habilitar Verificación de Contraseñas Comprometidas (HaveIBeenPwned)
+## 4. Habilitar Verificación de Contraseñas Comprometidas (HaveIBeenPwned)
 
 ### Ubicación
 **Dashboard → Authentication → Policies**
@@ -81,7 +116,7 @@ HaveIBeenPwned es una base de datos de contraseñas comprometidas. Esto previene
 
 ---
 
-## 4. Habilitar Más Opciones MFA (Multi-Factor Authentication)
+## 5. Habilitar Más Opciones MFA (Multi-Factor Authentication)
 
 ### Ubicación
 **Dashboard → Authentication → Providers**
@@ -140,7 +175,7 @@ MFA para Clientes: TOTP (opcional)
 
 ---
 
-## 5. Actualizar PostgreSQL
+## 6. Actualizar PostgreSQL
 
 ### Ubicación
 **Dashboard → Settings → Database**
@@ -184,7 +219,7 @@ MFA para Clientes: TOTP (opcional)
 
 ---
 
-## 6. Verificación Post-Configuración
+## 7. Verificación Post-Configuración
 
 ### Checklist de Seguridad
 
@@ -209,7 +244,7 @@ Una vez completados todos los pasos, verifica:
 
 ---
 
-## 7. Mantenimiento Continuo
+## 8. Mantenimiento Continuo
 
 ### Recomendaciones
 
@@ -230,7 +265,7 @@ Una vez completados todos los pasos, verifica:
 
 ---
 
-## 8. Recursos Adicionales
+## 9. Recursos Adicionales
 
 - [Documentación de Supabase Auth](https://supabase.com/docs/guides/auth)
 - [Best Practices de RLS](https://supabase.com/docs/guides/auth/row-level-security)
