@@ -361,7 +361,7 @@ const ProductForm = ({ open, onOpenChange, product = null, onSaved }) => {
         is_featured: formData.is_featured,
         purchase_mode: formData.purchase_mode,
 
-        price: formData.price,
+        price: normalizedPrice,
 
         shipping_length: formData.shipping_length ? parseFloat(formData.shipping_length) : null,
         shipping_width: formData.shipping_width ? parseFloat(formData.shipping_width) : null,
