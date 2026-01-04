@@ -21,7 +21,7 @@ import {
  * - seo_description (descripción meta)
  *
  * Productos Relacionados:
- * - Buscador para seleccionar productos por nombre/SKU
+ * - Buscador para seleccionar productos por nombre
  * - Array de IDs relacionados
  */
 const SeoRelTab = ({ formData, updateField }) => {
@@ -42,7 +42,7 @@ const SeoRelTab = ({ formData, updateField }) => {
     try {
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, sku, images')
+        .select('id, name, images')
         .in('id', formData.related_products);
 
       if (error) throw error;
@@ -70,7 +70,7 @@ const SeoRelTab = ({ formData, updateField }) => {
     return null;
   };
 
-  // Buscar productos
+  // Buscar productos por nombre
   const searchProducts = async () => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
@@ -80,17 +80,20 @@ const SeoRelTab = ({ formData, updateField }) => {
     setIsSearching(true);
 
     try {
+      const normalizedQuery = searchQuery.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, sku, images')
-        .ilike('name', `%${searchQuery}%`)
+        .select('id, name, images')
+        .eq('status', 'active')
+        .ilike('name', `%${normalizedQuery}%`)
         .limit(10);
 
       if (error) throw error;
 
-      // Filtrar productos ya seleccionados
+      // Filtrar productos ya seleccionados y el producto actual (si existe)
       const filtered = (data || []).filter(
-        p => !formData.related_products.includes(p.id)
+        p => !formData.related_products.includes(p.id) && p.id !== formData.id
       );
 
       setSearchResults(filtered);
@@ -265,7 +268,7 @@ const SeoRelTab = ({ formData, updateField }) => {
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Buscar por nombre o SKU..."
+                placeholder="Buscar por nombre del producto..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && searchProducts()}
@@ -310,7 +313,7 @@ const SeoRelTab = ({ formData, updateField }) => {
                     {/* Info del producto */}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
-                      <p className="text-xs text-gray-500">SKU: {product.sku}</p>
+                      <p className="text-xs text-gray-500">ID: {product.id}</p>
                     </div>
 
                     <Button
@@ -368,7 +371,7 @@ const SeoRelTab = ({ formData, updateField }) => {
                     {/* Info del producto */}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
-                      <p className="text-xs text-gray-500">SKU: {product.sku}</p>
+                      <p className="text-xs text-gray-500">ID: {product.id}</p>
                     </div>
 
                     <Button
