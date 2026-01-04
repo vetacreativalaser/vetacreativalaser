@@ -73,6 +73,9 @@ const ProductDetail = () => {
       }
       const fixedProduct = {
         ...currentProduct,
+        // Formato nuevo (JSONB)
+        images: typeof currentProduct.images === 'string' ? JSON.parse(currentProduct.images) : currentProduct.images,
+        // Formato antiguo (compatibilidad)
         image_urls: typeof currentProduct.image_urls === 'string' ? JSON.parse(currentProduct.image_urls) : currentProduct.image_urls,
         image_alts: typeof currentProduct.image_alts === 'string' ? JSON.parse(currentProduct.image_alts) : currentProduct.image_alts,
         specifications: typeof currentProduct.specifications === 'string' ? JSON.parse(currentProduct.specifications) : currentProduct.specifications,
@@ -115,7 +118,24 @@ const ProductDetail = () => {
   if (isLoadingProduct) return <p className="text-center py-8">Cargando producto...</p>;
   if (!product) return <p className="text-center py-8">Producto no encontrado</p>;
 
-  const getParsedAlts = Array.isArray(product.image_alts) ? product.image_alts : [];
+  // Normalizar imágenes para soportar formato nuevo (JSONB) y antiguo (arrays separados)
+  const getProductImages = () => {
+    // Formato nuevo: images JSONB array [{id, url, alt, text, position}]
+    if (product.images && Array.isArray(product.images) && product.images.length > 0) {
+      return {
+        urls: product.images.map(img => img.url),
+        alts: product.images.map(img => img.alt || '')
+      };
+    }
+
+    // Formato antiguo: image_urls y image_alts arrays separados
+    const urls = Array.isArray(product.image_urls) ? product.image_urls : [];
+    const alts = Array.isArray(product.image_alts) ? product.image_alts : [];
+
+    return { urls, alts };
+  };
+
+  const { urls: imageUrls, alts: imageAlts } = getProductImages();
   const price = product.price;
 
   // Handler para añadir al carrito
@@ -350,7 +370,7 @@ const ProductDetail = () => {
       </Link>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <ProductImages images={product.image_urls || []} alts={getParsedAlts} name={product.name} infinite={true} />
+        <ProductImages images={imageUrls} alts={imageAlts} name={product.name} infinite={true} />
 
         <div className="relative">
           <div className="flex justify-between items-start mb-4">
