@@ -311,18 +311,20 @@ const ProductForm = ({ open, onOpenChange, product = null, onSaved }) => {
 
       // Normalizar el objeto price (convertir strings a números)
       const normalizedPrice = { ...formData.price };
-      if (normalizedPrice.type === 'fixed' && normalizedPrice.value) {
-        normalizedPrice.value = parseFloat(normalizedPrice.value);
+      if (normalizedPrice.type === 'fixed' && normalizedPrice.value !== undefined) {
+        normalizedPrice.value = parseFloat(normalizedPrice.value) || 0;
       } else if (normalizedPrice.type === 'byQuantity' && normalizedPrice.tiers) {
         normalizedPrice.tiers = normalizedPrice.tiers.map(tier => ({
-          ...tier,
+          min: tier.min ? parseInt(tier.min) : 1,
+          max: tier.max ? parseInt(tier.max) : null,
           price: parseFloat(tier.price) || 0,
         }));
       } else if (normalizedPrice.type === 'byReason') {
         normalizedPrice.base = parseFloat(normalizedPrice.base) || 0;
+        normalizedPrice.selectorLabel = normalizedPrice.selectorLabel || 'Selecciona una opción';
         if (normalizedPrice.reasons) {
           normalizedPrice.reasons = normalizedPrice.reasons.map(reason => ({
-            ...reason,
+            reason: reason.reason || '',
             increment: parseFloat(reason.increment) || 0,
           }));
         }
