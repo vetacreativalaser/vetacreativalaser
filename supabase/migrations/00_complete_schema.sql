@@ -14,26 +14,36 @@ CREATE EXTENSION IF NOT EXISTS "pg_trgm"; -- Para búsqueda de texto
 -- Tabla de categorías
 CREATE TABLE IF NOT EXISTS categorias (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name TEXT NOT NULL UNIQUE,
+  title TEXT NOT NULL,
+  description TEXT,
+  categoria TEXT NOT NULL UNIQUE,
+  filter TEXT NOT NULL,
   image_url TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Tabla de productos
 CREATE TABLE IF NOT EXISTS products (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
-  slug TEXT NOT NULL UNIQUE,
-  description TEXT,
+  slug TEXT UNIQUE,
+  full_description TEXT,
+  brief_description TEXT,
   specifications JSONB DEFAULT '[]'::jsonb,
   custom_fields JSONB DEFAULT '[]'::jsonb,
-  categoria_id UUID REFERENCES categorias(id) ON DELETE SET NULL,
+  category_id UUID REFERENCES categorias(id) ON DELETE SET NULL,
   image_urls JSONB DEFAULT '[]'::jsonb,
   image_alts JSONB DEFAULT '[]'::jsonb,
   images JSONB DEFAULT '[]'::jsonb,
   stock INTEGER DEFAULT 0,
   price JSONB NOT NULL DEFAULT '{"type": "fixed", "value": 0}'::jsonb,
   purchase_mode TEXT DEFAULT 'standard' CHECK (purchase_mode IN ('standard', 'contact', 'disabled')),
+  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'draft', 'archived')),
+  shipping_weight DECIMAL(10,2) DEFAULT 0,
+  related_products UUID[] DEFAULT '{}',
+  seo_title TEXT,
+  seo_description TEXT,
   stripe_product_id TEXT,
   stripe_price_id TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -79,6 +89,7 @@ CREATE TABLE IF NOT EXISTS reviews (
 -- Tabla de pedidos
 CREATE TABLE IF NOT EXISTS orders (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  order_number TEXT UNIQUE,
   user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   user_email TEXT NOT NULL,
   user_name TEXT,
@@ -109,10 +120,8 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
 
 -- Tabla de configuración de la aplicación
 CREATE TABLE IF NOT EXISTS app_config (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  key TEXT NOT NULL UNIQUE,
+  key TEXT PRIMARY KEY,
   value JSONB NOT NULL,
-  description TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -148,8 +157,9 @@ CREATE TABLE IF NOT EXISTS shipping_rates (
 -- ÍNDICES PARA PERFORMANCE
 -- =====================================================
 
-CREATE INDEX IF NOT EXISTS idx_products_categoria ON products(categoria_id);
+CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
 CREATE INDEX IF NOT EXISTS idx_products_slug ON products(slug);
+CREATE INDEX IF NOT EXISTS idx_products_status ON products(status);
 CREATE INDEX IF NOT EXISTS idx_products_created_at ON products(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_favorites_user_id ON favorites(user_id);
 CREATE INDEX IF NOT EXISTS idx_favorites_product_id ON favorites(product_id);
@@ -232,9 +242,9 @@ CREATE POLICY "Service role gestiona tokens" ON password_reset_tokens FOR ALL
   TO service_role USING (true) WITH CHECK (true);
 
 -- Políticas para app_config
-CREATE POLICY "Config visible para todos" ON app_config FOR SELECT USING (true);
-CREATE POLICY "Solo admins modifican config" ON app_config FOR ALL
-  USING (auth.jwt() ->> 'email' = 'vetacreativalaser@gmail.com');
+CREATE POLICY "Permitir lectura pública de configuración" ON app_config FOR SELECT USING (true);
+CREATE POLICY "Permitir a usuarios autenticados modificar configuración" ON app_config FOR ALL
+  TO authenticated USING (true) WITH CHECK (true);
 
 -- Políticas para banner_principal
 CREATE POLICY "Banners visibles para todos" ON banner_principal FOR SELECT USING (true);
@@ -259,6 +269,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE TRIGGER update_categorias_updated_at BEFORE UPDATE ON categorias
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 CREATE TRIGGER update_products_updated_at BEFORE UPDATE ON products
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
@@ -269,6 +282,9 @@ CREATE TRIGGER update_reviews_updated_at BEFORE UPDATE ON reviews
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON orders
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_app_config_updated_at BEFORE UPDATE ON app_config
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Función para limpiar tokens expirados
@@ -333,11 +349,13 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- =====================================================
 
 -- Insertar configuración por defecto
-INSERT INTO app_config (key, value, description) VALUES
-  ('site_name', '"Veta Creativa Laser"', 'Nombre del sitio'),
-  ('contact_email', '"vetacreativalaser@gmail.com"', 'Email de contacto'),
-  ('points_per_euro', '10', 'Puntos por cada euro gastado'),
-  ('free_shipping_threshold', '50', 'Pedido mínimo para envío gratis (€)')
+INSERT INTO app_config (key, value) VALUES
+  ('site_name', '"Veta Creativa Laser"'),
+  ('contact_email', '"vetacreativalaser@gmail.com"'),
+  ('points_per_euro', '10'),
+  ('free_shipping_threshold', '50'),
+  ('shop_paused', 'false'),
+  ('shop_pause_message', '"Las compras online están pausadas temporalmente por mantenimiento de la máquina o periodo de exámenes con poca disposición de tiempo. Si urge demasiado, escríbenos."')
 ON CONFLICT (key) DO NOTHING;
 
 -- Insertar tarifa de envío por defecto
@@ -353,12 +371,16 @@ ON CONFLICT DO NOTHING;
 -- COMENTARIOS Y DOCUMENTACIÓN
 -- =====================================================
 
+COMMENT ON TABLE categorias IS 'Categorías de productos';
 COMMENT ON TABLE products IS 'Catálogo de productos disponibles para venta';
 COMMENT ON TABLE profiles IS 'Información extendida de usuarios (complementa auth.users)';
 COMMENT ON TABLE favorites IS 'Lista de favoritos de cada usuario';
 COMMENT ON TABLE reviews IS 'Reseñas y valoraciones de productos';
 COMMENT ON TABLE orders IS 'Pedidos realizados por los clientes';
 COMMENT ON TABLE password_reset_tokens IS 'Tokens temporales para reseteo de contraseña';
+COMMENT ON TABLE app_config IS 'Tabla de configuración de la aplicación. IMPORTANTE: Restringir acceso solo a administradores en producción usando metadata de usuario.';
 COMMENT ON COLUMN products.price IS 'Configuración de precio: {type: "fixed"|"per_unit"|"per_area", value: number, unit?: "cm2"|"cm"|"unit"}';
 COMMENT ON COLUMN products.custom_fields IS 'Campos personalizables: [{name, type, required, options?, price?}]';
 COMMENT ON COLUMN products.purchase_mode IS 'Modo de compra: standard (compra directa), contact (solo contacto), disabled (no disponible)';
+COMMENT ON COLUMN products.status IS 'Estado del producto: active (visible), draft (borrador), archived (archivado)';
+COMMENT ON COLUMN products.related_products IS 'Array de UUIDs de productos relacionados para cross-selling';
