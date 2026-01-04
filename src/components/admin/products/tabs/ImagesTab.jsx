@@ -411,7 +411,21 @@ const ImagesTab = ({ formData, updateField }) => {
                   <RotateCw className="h-3 w-3" />
                   Rotación
                 </Label>
-                <span className="text-xs text-gray-500">{rotation}°</span>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={360}
+                    step={1}
+                    value={rotation}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value) || 0;
+                      setRotation(Math.max(0, Math.min(360, val)));
+                    }}
+                    className="w-16 h-7 text-xs text-center"
+                  />
+                  <span className="text-xs text-gray-500">°</span>
+                </div>
               </div>
               <input
                 type="range"

@@ -115,7 +115,9 @@ const SeoRelTab = ({ formData, updateField }) => {
   // Añadir producto relacionado
   const addRelatedProduct = (product) => {
     const relatedIds = formData.related_products || [];
-    updateField('related_products', [...relatedIds, product.id]);
+    // Asegurar que el ID sea string (para compatibilidad con UUID)
+    const productId = String(product.id);
+    updateField('related_products', [...relatedIds, productId]);
     setSelectedProducts([...selectedProducts, product]);
     setSearchQuery('');
     setSearchResults([]);

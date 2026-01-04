@@ -6,38 +6,48 @@ export const getCroppedImg = (imageSrc, crop, rotation = 0) => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
 
-      const maxSize = Math.max(image.width, image.height);
-      const safeArea = 2 * ((maxSize / 2) * Math.sqrt(2));
+      const rotRad = (rotation * Math.PI) / 180;
 
-      // Configurar canvas temporal para rotación
-      canvas.width = safeArea;
-      canvas.height = safeArea;
+      // Calcular dimensiones del canvas rotado
+      const bBoxWidth = Math.abs(Math.cos(rotRad) * image.width) + Math.abs(Math.sin(rotRad) * image.height);
+      const bBoxHeight = Math.abs(Math.sin(rotRad) * image.width) + Math.abs(Math.cos(rotRad) * image.height);
 
-      // Trasladar al centro
-      ctx.translate(safeArea / 2, safeArea / 2);
-      ctx.rotate((rotation * Math.PI) / 180);
-      ctx.translate(-safeArea / 2, -safeArea / 2);
+      // Configurar canvas con tamaño suficiente para la imagen rotada
+      canvas.width = bBoxWidth;
+      canvas.height = bBoxHeight;
+
+      // Configurar transformación para rotar desde el centro
+      ctx.translate(bBoxWidth / 2, bBoxHeight / 2);
+      ctx.rotate(rotRad);
+      ctx.translate(-image.width / 2, -image.height / 2);
 
       // Dibujar imagen rotada
-      ctx.drawImage(
-        image,
-        safeArea / 2 - image.width * 0.5,
-        safeArea / 2 - image.height * 0.5
+      ctx.drawImage(image, 0, 0);
+
+      // Resetear transformación
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+      // Extraer el área recortada
+      const croppedCanvas = document.createElement('canvas');
+      const croppedCtx = croppedCanvas.getContext('2d');
+
+      croppedCanvas.width = crop.width;
+      croppedCanvas.height = crop.height;
+
+      // Copiar el área recortada desde el canvas rotado
+      croppedCtx.drawImage(
+        canvas,
+        crop.x,
+        crop.y,
+        crop.width,
+        crop.height,
+        0,
+        0,
+        crop.width,
+        crop.height
       );
 
-      const data = ctx.getImageData(0, 0, safeArea, safeArea);
-
-      // Configurar canvas final con el tamaño del crop
-      canvas.width = crop.width;
-      canvas.height = crop.height;
-
-      ctx.putImageData(
-        data,
-        Math.round(0 - safeArea / 2 + image.width * 0.5 - crop.x),
-        Math.round(0 - safeArea / 2 + image.height * 0.5 - crop.y)
-      );
-
-      canvas.toBlob((blob) => {
+      croppedCanvas.toBlob((blob) => {
         if (!blob) return reject(new Error('No se pudo recortar'));
         resolve(blob);
       }, 'image/webp');
