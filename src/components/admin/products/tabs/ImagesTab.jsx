@@ -16,7 +16,8 @@ import {
   Star,
   ChevronUp,
   ChevronDown,
-  Crop
+  Crop,
+  RotateCw
 } from 'lucide-react';
 
 /**
@@ -44,6 +45,7 @@ const ImagesTab = ({ formData, updateField }) => {
   });
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
+  const [rotation, setRotation] = useState(0);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [uploading, setUploading] = useState(false);
 
@@ -70,6 +72,7 @@ const ImagesTab = ({ formData, updateField }) => {
       });
       setCrop({ x: 0, y: 0 });
       setZoom(1);
+      setRotation(0);
       setCroppedAreaPixels(null);
     };
     reader.readAsDataURL(file);
@@ -90,8 +93,8 @@ const ImagesTab = ({ formData, updateField }) => {
     setUploading(true);
 
     try {
-      // 1. Recortar imagen
-      const croppedBlob = await getCroppedImg(cropModal.imageSrc, croppedAreaPixels);
+      // 1. Recortar imagen con rotación
+      const croppedBlob = await getCroppedImg(cropModal.imageSrc, croppedAreaPixels, rotation);
 
       // 2. Comprimir a WebP
       const compressedFile = await imageCompression(croppedBlob, {
@@ -377,10 +380,12 @@ const ImagesTab = ({ formData, updateField }) => {
                   image={cropModal.imageSrc}
                   crop={crop}
                   zoom={zoom}
+                  rotation={rotation}
                   aspect={1}
                   onCropChange={setCrop}
                   onCropComplete={onCropComplete}
                   onZoomChange={setZoom}
+                  onRotationChange={setRotation}
                 />
               )}
             </div>
@@ -399,10 +404,59 @@ const ImagesTab = ({ formData, updateField }) => {
               />
             </div>
 
+            {/* Control de rotación */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs text-gray-600 flex items-center gap-1">
+                  <RotateCw className="h-3 w-3" />
+                  Rotación
+                </Label>
+                <span className="text-xs text-gray-500">{rotation}°</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={360}
+                step={1}
+                value={rotation}
+                onChange={(e) => setRotation(parseInt(e.target.value))}
+                className="w-full"
+              />
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setRotation((rotation - 90 + 360) % 360)}
+                  className="flex-1"
+                >
+                  ↶ -90°
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setRotation((rotation + 90) % 360)}
+                  className="flex-1"
+                >
+                  ↷ +90°
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setRotation(0)}
+                  className="flex-1"
+                >
+                  Reset
+                </Button>
+              </div>
+            </div>
+
             {/* Información */}
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
               <p className="text-xs text-blue-800">
-                Ajusta el área de recorte arrastrando la imagen o usando el zoom.
+                Ajusta el área de recorte arrastrando la imagen, usando el zoom o rotando.
                 La imagen se guardará en formato cuadrado (1:1) y se comprimirá automáticamente.
               </p>
             </div>
