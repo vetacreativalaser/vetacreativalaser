@@ -16,6 +16,13 @@ import { PlusCircle, Trash2, DollarSign, Package, TrendingUp, Truck } from 'luci
  * - Preview visual del precio calculado
  */
 const PricingTab = ({ formData, updateField }) => {
+  // Asegurar que siempre haya un precio inicializado
+  React.useEffect(() => {
+    if (!formData.price || !formData.price.type) {
+      updateField('price', { type: 'fixed', value: 0 });
+    }
+  }, []);
+
   const priceType = formData.price?.type || 'fixed';
 
   // Actualizar tipo de precio
