@@ -194,9 +194,9 @@ const ReviewsDisplay = ({
 
                 {Array.isArray(imageUrls) && imageUrls.length > 0 && (
                   <div
-                    className={`grid gap-2 ${
+                    className={`gap-2 ${
                       shouldStack
-                        ? 'grid-cols-2 w-full mt-3'
+                        ? 'grid grid-cols-2 w-full mt-3'
                         : 'flex justify-center items-start'
                     }`}
                   >
