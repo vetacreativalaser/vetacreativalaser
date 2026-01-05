@@ -194,20 +194,26 @@ const ReviewsDisplay = ({
 
                 {Array.isArray(imageUrls) && imageUrls.length > 0 && (
                   <div
-                    className={`flex gap-2 ${
-                      shouldStack ? 'justify-start mt-3' : 'justify-center items-start'
+                    className={`grid gap-2 ${
+                      shouldStack
+                        ? 'grid-cols-2 w-full mt-3'
+                        : 'flex justify-center items-start'
                     }`}
                   >
-                    {visibleImages.map((url, index) => (
+                    {(shouldStack ? imageUrls : visibleImages).map((url, index) => (
                       <div key={index} className="relative">
                         <img
                           src={url}
                           onClick={() => openLightbox(review, index)}
-                          className="w-20 h-20 object-cover rounded border border-gray-200 cursor-pointer hover:opacity-75 transition-opacity"
+                          className={`${
+                            shouldStack
+                              ? 'w-full aspect-square'
+                              : 'w-20 h-20'
+                          } object-cover rounded border border-gray-200 cursor-pointer hover:opacity-75 transition-opacity`}
                           alt={`img-${index}`}
                           draggable={false}
                         />
-                        {index === visibleImages.length - 1 && extraImages > 0 && (
+                        {!shouldStack && index === visibleImages.length - 1 && extraImages > 0 && (
                           <div
                             className="absolute inset-0 bg-black/50 rounded flex items-center justify-center text-white text-sm font-medium cursor-pointer"
                             onClick={() => openLightbox(review, index)}
