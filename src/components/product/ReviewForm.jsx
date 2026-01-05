@@ -50,7 +50,7 @@ const ReviewForm = ({ user, productId, newReview, setNewReview, refreshReviews }
       const { error: insertError } = await supabase.from('reviews').insert({
         user_id: user.id,
         product_id: productId,
-        content: newReview.comment,
+        comment: newReview.comment,
         rating: newReview.rating,
         image_urls
       });

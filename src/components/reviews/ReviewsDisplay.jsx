@@ -188,7 +188,7 @@ const ReviewsDisplay = ({
                   )}
 
                   <p className="text-sm text-gray-700 leading-relaxed">
-                    {review.content}
+                    {review.comment}
                   </p>
                 </div>
 
@@ -289,7 +289,7 @@ const ReviewsDisplay = ({
                       />
                     ))}
                   </div>
-                  <p className="text-gray-700 text-sm">{selectedReview.content}</p>
+                  <p className="text-gray-700 text-sm">{selectedReview.comment}</p>
                 </div>
               )}
             </div>

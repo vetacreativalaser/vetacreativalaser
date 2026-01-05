@@ -27,7 +27,7 @@ const ProductDetail = () => {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [reviews, setReviews] = useState([]);
-  const [newReview, setNewReview] = useState({ rating: 0, comment: '', name: '' });
+  const [newReview, setNewReview] = useState({ rating: 0, comment: '' });
   const [isLoadingFavorite, setIsLoadingFavorite] = useState(false);
   const [isLoadingReview, setIsLoadingReview] = useState(false);
   const [product, setProduct] = useState(null);
