@@ -143,27 +143,27 @@ const ReviewsDisplay = ({
           return (
             <div
               key={review.id}
-              className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-sm transition-shadow"
+              className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-sm transition-shadow relative"
             >
+              {/* Botón eliminar siempre arriba a la derecha */}
+              {canDelete && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => handleDelete(review)}
+                  className="absolute top-3 right-3 hover:bg-red-50 h-8 w-8"
+                >
+                  <Trash2 className="w-4 h-4 text-red-600" />
+                </Button>
+              )}
+
               <div
                 className={`flex ${
                   shouldStack ? 'flex-col' : 'flex-row items-start'
                 } gap-4`}
               >
                 <div className="flex-1 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-gray-900">{name}</p>
-                    {canDelete && (
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => handleDelete(review)}
-                        className="hover:bg-red-50 h-8 w-8"
-                      >
-                        <Trash2 className="w-4 h-4 text-red-600" />
-                      </Button>
-                    )}
-                  </div>
+                  <p className="text-sm font-medium text-gray-900 pr-8">{name}</p>
 
                   <div className="flex gap-0.5">
                     {[1, 2, 3, 4, 5].map((v) => (
