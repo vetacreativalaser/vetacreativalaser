@@ -20,7 +20,7 @@ import { useShopPauseStatus } from '@/hooks/useShopPauseStatus';
 
 const ProductDetail = () => {
   const { id: productIdParam } = useParams();
-  const productId = parseInt(productIdParam);
+  const productId = productIdParam; // Mantener como string UUID
   const { user } = useAuth();
 
   // Estado existente
