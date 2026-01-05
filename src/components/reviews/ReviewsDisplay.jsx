@@ -151,7 +151,7 @@ const ReviewsDisplay = ({
                   size="icon"
                   variant="ghost"
                   onClick={() => handleDelete(review)}
-                  className="absolute top-3 right-3 hover:bg-red-50 h-8 w-8"
+                  className="absolute top-2 right-2 hover:bg-red-50 h-8 w-8 z-10"
                 >
                   <Trash2 className="w-4 h-4 text-red-600" />
                 </Button>
@@ -160,10 +160,10 @@ const ReviewsDisplay = ({
               <div
                 className={`flex ${
                   shouldStack ? 'flex-col' : 'flex-row items-start'
-                } gap-4`}
+                } gap-4 pr-10`}
               >
                 <div className="flex-1 space-y-3">
-                  <p className="text-sm font-medium text-gray-900 pr-8">{name}</p>
+                  <p className="text-sm font-medium text-gray-900">{name}</p>
 
                   <div className="flex gap-0.5">
                     {[1, 2, 3, 4, 5].map((v) => (
