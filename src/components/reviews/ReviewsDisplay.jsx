@@ -159,8 +159,8 @@ const ReviewsDisplay = ({
 
               <div
                 className={`flex ${
-                  shouldStack ? 'flex-col' : 'flex-row items-start'
-                } gap-4 pr-10`}
+                  shouldStack ? 'flex-col' : 'flex-row items-start pr-10'
+                } gap-4`}
               >
                 <div className="flex-1 space-y-3">
                   <p className="text-sm font-medium text-gray-900">{name}</p>
