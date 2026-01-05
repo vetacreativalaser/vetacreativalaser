@@ -28,7 +28,7 @@ const Register = ({ isAuthPageContext = false }) => {
     setIsLoading(true);
     try {
       await register({ name, email, phone, password });
-      toast({ title: "Registro exitoso", description: `¡Bienvenido, ${name}! Revisa tu correo para confirmar tu cuenta.` });
+      toast({ title: "Registro exitoso", description: `¡Bienvenido, ${name}! Ya puedes iniciar sesión.` });
       navigate('/perfil');
     } catch (error) {
       toast({ title: "Error de registro", description: error.message, variant: "destructive" });
