@@ -18,26 +18,61 @@ const RelatedProducts = ({ currentProductId, allProducts }) => {
         También te podría interesar
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-10">
-        {related.map((relatedProduct) => (
-          <div key={relatedProduct.id} className="group relative">
+        {related.map((product, index) => (
+          <motion.div
+            key={product.id}
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.2 }}
+            transition={{ delay: index * 0.05, duration: 0.4, ease: 'easeOut' }}
+            className="group relative transition-transform hover:scale-[1.015]"
+          >
             <div className="w-full aspect-square bg-gray-100 overflow-hidden">
-             <Link to={`/productos/${relatedProduct.id}`}>
-                <img 
+              <Link to={`/productos/${product.id}`}>
+                <img
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  alt={relatedProduct.image_alts && relatedProduct.image_alts.length > 0 ? relatedProduct.image_alts[0] : relatedProduct.name}
-                  src={(relatedProduct.image_urls && relatedProduct.image_urls.length > 0) ? relatedProduct.image_urls[0] : "https://images.unsplash.com/photo-1635865165118-917ed9e20936"}
+                  alt={
+                    product.images?.[0]?.alt ||
+                    product.image_alts?.[0] ||
+                    product.name
+                  }
+                  src={(() => {
+                    // Formato nuevo JSONB
+                    if (product.images?.[0]?.url) {
+                      return product.images[0].url;
+                    }
+                    // Formato antiguo (array de URLs)
+                    try {
+                      const urls = typeof product.image_urls === 'string' ? JSON.parse(product.image_urls) : product.image_urls;
+                      return Array.isArray(urls) && urls.length > 0 ? urls[0] : '';
+                    } catch {
+                      return '';
+                    }
+                  })()}
                 />
               </Link>
             </div>
-            <div className="mt-3 text-center">
-              <h3 className="text-md font-medium text-black">
-                <Link to={`/productos/${relatedProduct.id}`}>
-                  {relatedProduct.name}
+
+            {/* ZONA DE TEXTO CON HOVER COMPLETO */}
+            <div className="transition-colors duration-300 group-hover:bg-gray-100 px-3 py-3">
+              <p className="text-md font-medium text-black text-left leading-snug">
+                <Link to={`/productos/${product.id}`}>
+                  {product.name}
                 </Link>
-              </h3>
-              <p className="mt-1 text-sm text-gray-500">{relatedProduct.price}</p>
+              </p>
+              <p className="mt-1 text-sm text-left text-gray-500">
+                {(() => {
+                  try {
+                    const parsedPrice = typeof product.price === 'string' ? JSON.parse(product.price) : product.price;
+                    if (parsedPrice?.type === 'fixed') return `${parsedPrice.value || parsedPrice.fixedPrice} €`;
+                    return 'variable €';
+                  } catch {
+                    return 'variable €';
+                  }
+                })()}
+              </p>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
     </motion.div>

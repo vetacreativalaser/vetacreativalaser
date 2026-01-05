@@ -11,6 +11,7 @@ import ReviewForm from '@/components/product/ReviewForm';
 import ReviewsList from '@/components/product/ReviewsList';
 import ProductForm from '@/components/admin/products/ProductForm';
 import ProductCustomizer from '@/components/commerce/product/ProductCustomizer';
+import RelatedProducts from '@/components/product/RelatedProducts';
 import { useCartStore } from '@/store/useCartStore';
 import { calculateUnitPrice, formatPrice, getTierInfo, normalizePriceConfig } from '@/lib/priceUtils';
 import { Input } from '@/components/ui/input';
@@ -31,6 +32,7 @@ const ProductDetail = () => {
   const [isLoadingReview, setIsLoadingReview] = useState(false);
   const [product, setProduct] = useState(null);
   const [isLoadingProduct, setIsLoadingProduct] = useState(true);
+  const [relatedProducts, setRelatedProducts] = useState([]);
 
   // Estado para E-commerce (NUEVO)
   const [quantity, setQuantity] = useState(1);
@@ -91,6 +93,27 @@ const ProductDetail = () => {
         if (!error) setIsFavorite(!!data);
         setIsLoadingFavorite(false);
       }
+
+      // Cargar productos relacionados
+      if (fixedProduct.related_products && Array.isArray(fixedProduct.related_products) && fixedProduct.related_products.length > 0) {
+        const { data: relatedData, error: relatedError } = await supabase
+          .from('products')
+          .select('*')
+          .in('id', fixedProduct.related_products)
+          .eq('status', 'active');
+
+        if (!relatedError && relatedData) {
+          // Normalizar productos relacionados (mismo formato que producto actual)
+          const normalizedRelated = relatedData.map(p => ({
+            ...p,
+            images: typeof p.images === 'string' ? JSON.parse(p.images) : p.images,
+            image_urls: typeof p.image_urls === 'string' ? JSON.parse(p.image_urls) : p.image_urls,
+            image_alts: typeof p.image_alts === 'string' ? JSON.parse(p.image_alts) : p.image_alts,
+          }));
+          setRelatedProducts(normalizedRelated);
+        }
+      }
+
       setIsLoadingProduct(false);
     };
     fetchProduct();
@@ -584,6 +607,11 @@ const ProductDetail = () => {
         <ReviewForm productId={product.id} user={user} newReview={newReview} setNewReview={setNewReview} refreshReviews={() => fetchReviews(product.id)} />
         <ReviewsList reviews={reviews} user={user} refreshReviews={() => fetchReviews(product.id)} />
       </div>
+
+      {/* Productos relacionados */}
+      {relatedProducts.length > 0 && (
+        <RelatedProducts currentProductId={product.id} allProducts={relatedProducts} />
+      )}
     </div>
   );
 };
