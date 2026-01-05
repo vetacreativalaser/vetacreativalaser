@@ -53,13 +53,13 @@ const ReviewsDisplay = ({
       const uniqueIds = [...new Set(reviews.map((r) => r.user_id))];
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name')
+        .select('id, name')
         .in('id', uniqueIds);
 
       if (!error && data) {
         const nameMap = {};
         data.forEach((u) => {
-          nameMap[u.id] = u.full_name;
+          nameMap[u.id] = u.name;
         });
         setUserNames(nameMap);
       }
