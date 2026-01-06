@@ -157,11 +157,7 @@ const AdminDashboard = () => {
     // 6) Productos, reseñas y pedidos (orders)
     const [{ data: productsData }, { data: reviewsData }, { data: ordersData }] = await Promise.all([
       supabase.from('products').select(`*,categorias (categoria)`).order('created_at', { ascending: false }),
-      supabase.from('reviews').select(`
-        *,
-        products(id, name),
-        profiles(id, name)
-      `).order('created_at', { ascending: false }),
+      supabase.from('reviews').select('*').order('created_at', { ascending: false }),
       supabase.from('orders').select('*').order('created_at', { ascending: false }),
     ]);
 
@@ -169,14 +165,41 @@ const AdminDashboard = () => {
     setPurchases(ordersData || []); // Ahora purchases contiene los datos de orders
 
     // Enriquecer reseñas con nombres de usuario y producto
-    const enrichedReviews = (reviewsData || []).map(review => ({
-      ...review,
-      userName: review.profiles?.name || 'Usuario desconocido',
-      productName: review.products?.name || 'Producto eliminado',
-      productId: review.products?.id || review.product_id
-    }));
+    if (reviewsData && reviewsData.length > 0) {
+      // Obtener IDs únicos de productos y usuarios
+      const productIds = [...new Set(reviewsData.map(r => r.product_id).filter(Boolean))];
+      const userIds = [...new Set(reviewsData.map(r => r.user_id).filter(Boolean))];
 
-    setReviews(enrichedReviews);
+      // Fetch productos y usuarios en paralelo
+      const [{ data: productsInfo }, { data: usersInfo }] = await Promise.all([
+        productIds.length > 0
+          ? supabase.from('products').select('id, name').in('id', productIds)
+          : Promise.resolve({ data: [] }),
+        userIds.length > 0
+          ? supabase.from('profiles').select('id, name').in('id', userIds)
+          : Promise.resolve({ data: [] })
+      ]);
+
+      // Crear mapas para búsqueda rápida
+      const productMap = {};
+      (productsInfo || []).forEach(p => { productMap[p.id] = p; });
+
+      const userMap = {};
+      (usersInfo || []).forEach(u => { userMap[u.id] = u; });
+
+      // Enriquecer reseñas
+      const enrichedReviews = reviewsData.map(review => ({
+        ...review,
+        userName: userMap[review.user_id]?.name || 'Usuario desconocido',
+        productName: productMap[review.product_id]?.name || 'Producto eliminado',
+        productId: productMap[review.product_id]?.id || null
+      }));
+
+      setReviews(enrichedReviews);
+    } else {
+      setReviews([]);
+    }
+
     setIsLoading(false);
   };
 
