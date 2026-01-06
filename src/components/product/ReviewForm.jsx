@@ -84,11 +84,6 @@ const ReviewForm = ({ user, productId, newReview, setNewReview, refreshReviews }
       // Restaurar posición del scroll
       window.scrollTo(0, scrollY);
     }
-
-    // Limpiar el input para poder seleccionar la misma foto de nuevo si es necesario
-    if (e.target) {
-      e.target.value = '';
-    }
   };
 
   const handleSubmit = async (e) => {
@@ -226,7 +221,11 @@ const ReviewForm = ({ user, productId, newReview, setNewReview, refreshReviews }
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      cameraInputRef.current?.click();
+                      // Resetear el input antes de abrir la cámara
+                      if (cameraInputRef.current) {
+                        cameraInputRef.current.value = null;
+                        cameraInputRef.current.click();
+                      }
                     }}
                     disabled={selectedImages.length >= 6}
                   >
@@ -240,7 +239,11 @@ const ReviewForm = ({ user, productId, newReview, setNewReview, refreshReviews }
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      imageInputRef.current?.click();
+                      // Resetear el input antes de abrir la galería
+                      if (imageInputRef.current) {
+                        imageInputRef.current.value = null;
+                        imageInputRef.current.click();
+                      }
                     }}
                     disabled={selectedImages.length >= 6}
                   >
@@ -256,7 +259,11 @@ const ReviewForm = ({ user, productId, newReview, setNewReview, refreshReviews }
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    imageInputRef.current?.click();
+                    // Resetear el input antes de abrir
+                    if (imageInputRef.current) {
+                      imageInputRef.current.value = null;
+                      imageInputRef.current.click();
+                    }
                   }}
                   disabled={selectedImages.length >= 6}
                 >
@@ -272,7 +279,7 @@ const ReviewForm = ({ user, productId, newReview, setNewReview, refreshReviews }
         <Input
           type="file"
           accept="image/*"
-          capture="environment"
+          capture
           onChange={handleImageChange}
           ref={cameraInputRef}
           className="hidden"
