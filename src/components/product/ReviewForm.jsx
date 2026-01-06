@@ -12,6 +12,7 @@ const ReviewForm = ({ user, productId, newReview, setNewReview, refreshReviews }
   const [selectedImages, setSelectedImages] = useState([]);
   const [isMobile, setIsMobile] = useState(false);
   const [processingImage, setProcessingImage] = useState(false);
+  const [imageSuccess, setImageSuccess] = useState(false);
   const imageInputRef = useRef();
   const cameraInputRef = useRef();
 
@@ -25,10 +26,13 @@ const ReviewForm = ({ user, productId, newReview, setNewReview, refreshReviews }
   }, []);
 
   const handleImageChange = async (e) => {
+    console.log('🎯 handleImageChange llamado');
     const files = Array.from(e.target.files);
+    console.log('📁 Archivos recibidos:', files.length);
 
     if (files.length === 0) {
       console.log('⚠️ No hay archivos seleccionados');
+      setProcessingImage(false);
       return;
     }
 
@@ -38,11 +42,15 @@ const ReviewForm = ({ user, productId, newReview, setNewReview, refreshReviews }
 
     if (filesToAdd.length === 0) {
       console.log('⚠️ Ya tienes 6 imágenes');
+      setProcessingImage(false);
       return;
     }
 
     console.log('📸 Procesando imágenes:', filesToAdd.length, filesToAdd.map(f => f.name));
     setProcessingImage(true);
+
+    // Prevenir scroll automático
+    const scrollY = window.scrollY;
 
     try {
       const compressedImages = await Promise.all(
@@ -63,10 +71,18 @@ const ReviewForm = ({ user, productId, newReview, setNewReview, refreshReviews }
         console.log('📦 Total de imágenes ahora:', newImages.length);
         return newImages;
       });
+
+      console.log('✅ Estado actualizado correctamente');
+
+      // Mostrar mensaje de éxito
+      setImageSuccess(true);
+      setTimeout(() => setImageSuccess(false), 3000);
     } catch (error) {
       console.error('❌ Error procesando imágenes:', error);
     } finally {
       setProcessingImage(false);
+      // Restaurar posición del scroll
+      window.scrollTo(0, scrollY);
     }
 
     // Limpiar el input para poder seleccionar la misma foto de nuevo si es necesario
@@ -157,6 +173,16 @@ const ReviewForm = ({ user, productId, newReview, setNewReview, refreshReviews }
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
               <span className="font-medium">Procesando imagen...</span>
+            </div>
+          )}
+
+          {/* Mensaje de éxito */}
+          {imageSuccess && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2 text-green-700">
+              <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <span className="font-medium">¡Imagen agregada correctamente!</span>
             </div>
           )}
 
