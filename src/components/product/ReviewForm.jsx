@@ -24,6 +24,9 @@ const ReviewForm = ({ user, productId, newReview, setNewReview, refreshReviews }
   }, []);
 
   const handleImageChange = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
     const files = Array.from(e.target.files);
 
     // Limitar el total de imágenes a 6
@@ -32,15 +35,27 @@ const ReviewForm = ({ user, productId, newReview, setNewReview, refreshReviews }
 
     if (filesToAdd.length === 0) return;
 
-    const compressedImages = await Promise.all(
-      filesToAdd.map(async (file) => {
-        const webpBlob = await compressImageToWebP(file, 0.7);
-        return new File([webpBlob], `${Date.now()}_${file.name}.webp`, { type: 'image/webp' });
-      })
-    );
+    console.log('📸 Procesando imágenes:', filesToAdd.length);
 
-    // Agregar las nuevas imágenes a las existentes
-    setSelectedImages(prev => [...prev, ...compressedImages]);
+    try {
+      const compressedImages = await Promise.all(
+        filesToAdd.map(async (file) => {
+          const webpBlob = await compressImageToWebP(file, 0.7);
+          return new File([webpBlob], `${Date.now()}_${file.name}.webp`, { type: 'image/webp' });
+        })
+      );
+
+      console.log('✅ Imágenes comprimidas:', compressedImages.length);
+
+      // Agregar las nuevas imágenes a las existentes
+      setSelectedImages(prev => {
+        const newImages = [...prev, ...compressedImages];
+        console.log('📦 Total de imágenes:', newImages.length);
+        return newImages;
+      });
+    } catch (error) {
+      console.error('❌ Error procesando imágenes:', error);
+    }
 
     // Limpiar el input para poder seleccionar la misma foto de nuevo si es necesario
     if (e.target) {
@@ -159,7 +174,11 @@ const ReviewForm = ({ user, productId, newReview, setNewReview, refreshReviews }
                     type="button"
                     variant="outline"
                     className="flex-1 flex items-center justify-center gap-2"
-                    onClick={() => cameraInputRef.current?.click()}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      cameraInputRef.current?.click();
+                    }}
                     disabled={selectedImages.length >= 6}
                   >
                     <Camera className="w-4 h-4" />
@@ -169,7 +188,11 @@ const ReviewForm = ({ user, productId, newReview, setNewReview, refreshReviews }
                     type="button"
                     variant="outline"
                     className="flex-1 flex items-center justify-center gap-2"
-                    onClick={() => imageInputRef.current?.click()}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      imageInputRef.current?.click();
+                    }}
                     disabled={selectedImages.length >= 6}
                   >
                     <ImageIcon className="w-4 h-4" />
@@ -181,7 +204,11 @@ const ReviewForm = ({ user, productId, newReview, setNewReview, refreshReviews }
                   type="button"
                   variant="outline"
                   className="w-full"
-                  onClick={() => imageInputRef.current?.click()}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    imageInputRef.current?.click();
+                  }}
                   disabled={selectedImages.length >= 6}
                 >
                   <ImageIcon className="w-4 h-4 mr-2" />
