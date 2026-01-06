@@ -1,7 +1,6 @@
-import React, { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Image as ImageIcon, Send, Star, Camera } from 'lucide-react';
@@ -275,24 +274,24 @@ const ReviewForm = ({ user, productId, newReview, setNewReview, refreshReviews }
           )}
         </div>
 
-        {/* Input para cámara (móvil) */}
-        <Input
+        {/* Input para cámara (móvil) - usando input nativo para evitar problemas con capture */}
+        <input
           type="file"
           accept="image/*"
-          capture
+          capture="camera"
           onChange={handleImageChange}
           ref={cameraInputRef}
-          className="hidden"
+          style={{ display: 'none' }}
         />
 
         {/* Input para galería */}
-        <Input
+        <input
           type="file"
           accept="image/*"
           multiple
           onChange={handleImageChange}
           ref={imageInputRef}
-          className="hidden"
+          style={{ display: 'none' }}
         />
       </div>
       <Button type="submit" disabled={isLoading} className="w-full">
