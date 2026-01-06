@@ -79,12 +79,16 @@ export const AuthProvider = ({ children }) => {
 
   const login = async ({ email, password }) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
+    if (error) {
+      console.error('Error en login:', error);
+      throw error;
+    }
 
     if (data.user) {
       let profile = await fetchUserProfile(data.user.id);
 
       if (!profile) {
+        console.log('📝 Usuario sin perfil, creando perfil automáticamente...');
         const { error: insertError } = await supabase.from('profiles').insert({
           id: data.user.id,
           email: data.user.email,
@@ -93,7 +97,13 @@ export const AuthProvider = ({ children }) => {
           purchase_count: 0,
         });
 
-        if (insertError) throw insertError;
+        if (insertError) {
+          console.error('Error creando perfil en login:', insertError);
+          throw new Error('Error al crear el perfil. Por favor, contacta soporte.');
+        }
+
+        // Refetch profile after creation
+        profile = await fetchUserProfile(data.user.id);
       }
 
       setUser(profile ? { ...data.user, ...profile } : data.user);

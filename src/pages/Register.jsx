@@ -31,7 +31,18 @@ const Register = ({ isAuthPageContext = false }) => {
       toast({ title: "Registro exitoso", description: `¡Bienvenido, ${name}! Ya puedes iniciar sesión.` });
       navigate('/perfil');
     } catch (error) {
-      toast({ title: "Error de registro", description: error.message, variant: "destructive" });
+      console.error('Error en registro:', error);
+
+      // Si el error es que el usuario ya existe, ofrecer limpiar sesión
+      if (error.message?.includes('User already registered') || error.message?.includes('ya está registrado')) {
+        toast({
+          title: "Usuario ya registrado",
+          description: "Este correo ya está registrado. Si tienes problemas para iniciar sesión, intenta limpiar tu sesión y vuelve a intentar.",
+          variant: "destructive"
+        });
+      } else {
+        toast({ title: "Error de registro", description: error.message, variant: "destructive" });
+      }
     } finally {
       setIsLoading(false);
     }
