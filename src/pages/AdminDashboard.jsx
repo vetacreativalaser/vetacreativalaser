@@ -157,13 +157,26 @@ const AdminDashboard = () => {
     // 6) Productos, reseñas y pedidos (orders)
     const [{ data: productsData }, { data: reviewsData }, { data: ordersData }] = await Promise.all([
       supabase.from('products').select(`*,categorias (categoria)`).order('created_at', { ascending: false }),
-      supabase.from('reviews').select('*').order('created_at', { ascending: false }),
+      supabase.from('reviews').select(`
+        *,
+        products(id, name),
+        profiles(id, name)
+      `).order('created_at', { ascending: false }),
       supabase.from('orders').select('*').order('created_at', { ascending: false }),
     ]);
 
     setProducts(productsData || []);
     setPurchases(ordersData || []); // Ahora purchases contiene los datos de orders
-    setReviews(reviewsData || []);
+
+    // Enriquecer reseñas con nombres de usuario y producto
+    const enrichedReviews = (reviewsData || []).map(review => ({
+      ...review,
+      userName: review.profiles?.name || 'Usuario desconocido',
+      productName: review.products?.name || 'Producto eliminado',
+      productId: review.products?.id || review.product_id
+    }));
+
+    setReviews(enrichedReviews);
     setIsLoading(false);
   };
 
@@ -949,7 +962,18 @@ const handleDeleteCategory = async (categoryId) => {
                         {reviews.map(review => (
                           <tr key={review.id} className="bg-white border-b hover:bg-gray-50">
                             <td className="px-6 py-4 font-medium text-gray-900">{review.userName}</td>
-                            <td className="px-6 py-4">{review.productName} (ID: {review.product_id})</td>
+                            <td className="px-6 py-4">
+                              {review.productId ? (
+                                <Link
+                                  to={`/productos/${review.productId}`}
+                                  className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                                >
+                                  {review.productName}
+                                </Link>
+                              ) : (
+                                <span className="text-gray-500">{review.productName}</span>
+                              )}
+                            </td>
                             <td className="px-6 py-4">
                               <div className="flex">
                                   {[...Array(5)].map((_, i) => (
