@@ -39,10 +39,22 @@ export const AuthProvider = ({ children }) => {
     const { data: { session }, error } = await supabase.auth.getSession();
     if (error) {
       console.error("❌ Error getSession:", error);
+
+      // Si hay error de refresh token, limpiar sesión corrupta
+      if (error.message?.includes('Invalid Refresh Token') || error.message?.includes('Refresh Token Not Found')) {
+        console.log('🧹 Limpiando sesión corrupta...');
+        await supabase.auth.signOut();
+        setUser(null);
+        setLoading(false);
+        setTriedSession(true);
+        return;
+      }
+
       if (retry < 3) {
         setTimeout(() => tryGetSession(retry + 1), 1000); // retry
       } else {
         setLoading(false);
+        setTriedSession(true);
       }
       return;
     }
@@ -95,6 +107,7 @@ export const AuthProvider = ({ children }) => {
       email: userData.email,
       password: userData.password,
       options: {
+        emailRedirectTo: `${window.location.origin}/perfil`,
         data: {
           name: userData.name,
           phone: userData.phone,
@@ -103,10 +116,26 @@ export const AuthProvider = ({ children }) => {
       },
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error en signUp:', error);
+      if (error.message?.includes('User already registered')) {
+        throw new Error('Este correo ya está registrado. Intenta iniciar sesión.');
+      }
+      if (error.message?.includes('Email rate limit exceeded')) {
+        throw new Error('Demasiados intentos. Espera unos minutos e intenta de nuevo.');
+      }
+      throw error;
+    }
 
     const user = data.user;
-    if (!user?.id) throw new Error('No se pudo obtener el ID del usuario tras el registro.');
+    if (!user?.id) {
+      throw new Error('No se pudo obtener el ID del usuario tras el registro.');
+    }
+
+    // Si el usuario necesita confirmar email, informarle
+    if (data.user && !data.session) {
+      throw new Error('Por favor, revisa tu correo para confirmar tu cuenta antes de iniciar sesión.');
+    }
 
     const { error: profileError } = await supabase
       .from('profiles')
@@ -118,7 +147,10 @@ export const AuthProvider = ({ children }) => {
         purchase_count: 0,
       });
 
-    if (profileError) throw profileError;
+    if (profileError) {
+      console.error('Error creando perfil:', profileError);
+      throw new Error('Error al crear el perfil de usuario. Por favor, contacta soporte.');
+    }
 
     return data;
   };
