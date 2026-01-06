@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Image as ImageIcon, Send, Star, Camera } from 'lucide-react';
+import { Image as ImageIcon, Send, Star } from 'lucide-react';
 import compressImageToWebP from '@/lib/utils';
 
 const ReviewForm = ({ user, productId, newReview, setNewReview, refreshReviews }) => {
@@ -13,7 +13,6 @@ const ReviewForm = ({ user, productId, newReview, setNewReview, refreshReviews }
   const [processingImage, setProcessingImage] = useState(false);
   const [imageSuccess, setImageSuccess] = useState(false);
   const imageInputRef = useRef();
-  const cameraInputRef = useRef();
 
   useEffect(() => {
     const checkMobile = () => {
@@ -211,78 +210,27 @@ const ReviewForm = ({ user, productId, newReview, setNewReview, refreshReviews }
                   : `${selectedImages.length}/6 fotos agregadas`}
               </Label>
 
-              {isMobile ? (
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex-1 flex items-center justify-center gap-2"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      // Resetear el input antes de abrir la cámara
-                      if (cameraInputRef.current) {
-                        cameraInputRef.current.value = null;
-                        cameraInputRef.current.click();
-                      }
-                    }}
-                    disabled={selectedImages.length >= 6}
-                  >
-                    <Camera className="w-4 h-4" />
-                    Tomar foto
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex-1 flex items-center justify-center gap-2"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      // Resetear el input antes de abrir la galería
-                      if (imageInputRef.current) {
-                        imageInputRef.current.value = null;
-                        imageInputRef.current.click();
-                      }
-                    }}
-                    disabled={selectedImages.length >= 6}
-                  >
-                    <ImageIcon className="w-4 h-4" />
-                    Galería
-                  </Button>
-                </div>
-              ) : (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    // Resetear el input antes de abrir
-                    if (imageInputRef.current) {
-                      imageInputRef.current.value = null;
-                      imageInputRef.current.click();
-                    }
-                  }}
-                  disabled={selectedImages.length >= 6}
-                >
-                  <ImageIcon className="w-4 h-4 mr-2" />
-                  Seleccionar imágenes
-                </Button>
-              )}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  // Resetear el input antes de abrir
+                  if (imageInputRef.current) {
+                    imageInputRef.current.value = null;
+                    imageInputRef.current.click();
+                  }
+                }}
+                disabled={selectedImages.length >= 6}
+              >
+                <ImageIcon className="w-4 h-4 mr-2" />
+                {isMobile ? 'Seleccionar fotos' : 'Seleccionar imágenes'}
+              </Button>
             </>
           )}
         </div>
-
-        {/* Input para cámara (móvil) - usando input nativo para evitar problemas con capture */}
-        <input
-          type="file"
-          accept="image/*"
-          capture="camera"
-          onChange={handleImageChange}
-          ref={cameraInputRef}
-          style={{ display: 'none' }}
-        />
 
         {/* Input para galería */}
         <input
