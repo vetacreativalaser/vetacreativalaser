@@ -24,33 +24,41 @@ const ReviewForm = ({ user, productId, newReview, setNewReview, refreshReviews }
   }, []);
 
   const handleImageChange = async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
     const files = Array.from(e.target.files);
+
+    if (files.length === 0) {
+      console.log('⚠️ No hay archivos seleccionados');
+      return;
+    }
 
     // Limitar el total de imágenes a 6
     const remainingSlots = 6 - selectedImages.length;
     const filesToAdd = files.slice(0, remainingSlots);
 
-    if (filesToAdd.length === 0) return;
+    if (filesToAdd.length === 0) {
+      console.log('⚠️ Ya tienes 6 imágenes');
+      return;
+    }
 
-    console.log('📸 Procesando imágenes:', filesToAdd.length);
+    console.log('📸 Procesando imágenes:', filesToAdd.length, filesToAdd.map(f => f.name));
 
     try {
       const compressedImages = await Promise.all(
-        filesToAdd.map(async (file) => {
+        filesToAdd.map(async (file, index) => {
+          console.log(`🔄 Comprimiendo imagen ${index + 1}:`, file.name, `(${(file.size / 1024).toFixed(2)} KB)`);
           const webpBlob = await compressImageToWebP(file, 0.7);
-          return new File([webpBlob], `${Date.now()}_${file.name}.webp`, { type: 'image/webp' });
+          const newFile = new File([webpBlob], `${Date.now()}_${index}_${file.name}.webp`, { type: 'image/webp' });
+          console.log(`✅ Imagen ${index + 1} comprimida:`, `(${(newFile.size / 1024).toFixed(2)} KB)`);
+          return newFile;
         })
       );
 
-      console.log('✅ Imágenes comprimidas:', compressedImages.length);
+      console.log('✅ Todas las imágenes comprimidas:', compressedImages.length);
 
       // Agregar las nuevas imágenes a las existentes
       setSelectedImages(prev => {
         const newImages = [...prev, ...compressedImages];
-        console.log('📦 Total de imágenes:', newImages.length);
+        console.log('📦 Total de imágenes ahora:', newImages.length);
         return newImages;
       });
     } catch (error) {
