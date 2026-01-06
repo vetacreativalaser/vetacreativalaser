@@ -68,6 +68,10 @@ const AdminDashboard = () => {
   const [isUserDetailsOpen, setIsUserDetailsOpen] = useState(false);
   const [userOrders, setUserOrders] = useState([]);
 
+  // Estado para detalles de reseña
+  const [selectedReview, setSelectedReview] = useState(null);
+  const [isReviewDetailsOpen, setIsReviewDetailsOpen] = useState(false);
+
   useEffect(() => {
     const fetchPopularity = async () => {
       const data = await getProductPopularity();
@@ -1005,7 +1009,18 @@ const handleDeleteCategory = async (categoryId) => {
                               </div>
                             </td>
                             <td className="px-6 py-4">{new Date(review.created_at).toLocaleDateString()}</td>
-                            <td className="px-6 py-4">
+                            <td className="px-6 py-4 flex space-x-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-blue-600 hover:bg-blue-100 p-1.5"
+                                onClick={() => {
+                                  setSelectedReview(review);
+                                  setIsReviewDetailsOpen(true);
+                                }}
+                              >
+                                <Eye className="h-4 w-4"/>
+                              </Button>
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button variant="ghost" size="sm" className="text-red-600 hover:bg-red-100 p-1.5" disabled={isLoading}>
@@ -1037,6 +1052,119 @@ const handleDeleteCategory = async (categoryId) => {
                   </div>
                 }
               </motion.div>
+
+              {/* Review Details Dialog */}
+              <Dialog open={isReviewDetailsOpen} onOpenChange={setIsReviewDetailsOpen}>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="text-2xl font-bold text-blue-600">
+                      Detalles de la Reseña
+                    </DialogTitle>
+                  </DialogHeader>
+
+                  {selectedReview && (
+                    <div className="space-y-6">
+                      {/* Información del Usuario y Producto */}
+                      <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-6 rounded-lg border-2 border-blue-200">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-xs text-gray-600 mb-1">Usuario</p>
+                            <p className="font-semibold text-gray-900">{selectedReview.userName}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-600 mb-1">Producto</p>
+                            {selectedReview.productId ? (
+                              <Link
+                                to={`/productos/${selectedReview.productId}`}
+                                className="font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                              >
+                                {selectedReview.productName}
+                              </Link>
+                            ) : (
+                              <p className="font-semibold text-gray-500">{selectedReview.productName}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Puntuación */}
+                      <div className="bg-white p-6 rounded-lg border border-gray-200">
+                        <h3 className="text-sm font-medium text-gray-600 mb-2">Puntuación</h3>
+                        <div className="flex items-center gap-2">
+                          <div className="flex">
+                            {[...Array(5)].map((_, i) => (
+                              <StarIcon
+                                key={i}
+                                className={`h-6 w-6 ${i < selectedReview.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-lg font-semibold text-gray-900">
+                            {selectedReview.rating}/5
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Comentario */}
+                      <div className="bg-white p-6 rounded-lg border border-gray-200">
+                        <h3 className="text-sm font-medium text-gray-600 mb-3">Comentario</h3>
+                        <p className="text-gray-900 whitespace-pre-wrap leading-relaxed">
+                          {selectedReview.comment || 'Sin comentario'}
+                        </p>
+                      </div>
+
+                      {/* Imágenes */}
+                      {selectedReview.image_urls && Array.isArray(selectedReview.image_urls) && selectedReview.image_urls.length > 0 && (
+                        <div className="bg-white p-6 rounded-lg border border-gray-200">
+                          <h3 className="text-sm font-medium text-gray-600 mb-3">
+                            Imágenes ({selectedReview.image_urls.length})
+                          </h3>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            {selectedReview.image_urls.map((url, index) => (
+                              <img
+                                key={index}
+                                src={url}
+                                alt={`Imagen ${index + 1}`}
+                                className="w-full aspect-square object-cover rounded border border-gray-200 hover:opacity-75 transition-opacity cursor-pointer"
+                                onClick={() => window.open(url, '_blank')}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Información Adicional */}
+                      <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                        <h3 className="text-sm font-medium text-gray-600 mb-3">Información Adicional</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">Fecha de creación</p>
+                            <p className="font-medium text-gray-900">
+                              {new Date(selectedReview.created_at).toLocaleDateString('es-ES', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">ID de reseña</p>
+                            <p className="font-mono text-xs text-gray-700 break-all">{selectedReview.id}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsReviewDetailsOpen(false)}>
+                      Cerrar
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </TabsContent>
             <TabsContent value="categories">
               <motion.div
