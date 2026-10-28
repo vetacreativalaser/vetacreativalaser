@@ -16,12 +16,17 @@ import { useCartStore } from '@/store/useCartStore';
 import { calculateUnitPrice, formatPrice, getTierInfo, normalizePriceConfig } from '@/lib/priceUtils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { buildWhatsAppLink } from '@/lib/whatsapp';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { localize } from '@/i18n/localize';
 import { useShopPauseStatus } from '@/hooks/useShopPauseStatus';
 
 const ProductDetail = () => {
   const { id: productIdParam } = useParams();
   const productId = productIdParam; // Mantener como string UUID
   const { user } = useAuth();
+  const { t, language } = useLanguage();
 
   // Estado existente
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -39,9 +44,10 @@ const ProductDetail = () => {
   const [customValues, setCustomValues] = useState({});
   const [isCustomizationValid, setIsCustomizationValid] = useState(true);
   const [selectedReason, setSelectedReason] = useState(null);
+  const [isAddedPopupOpen, setIsAddedPopupOpen] = useState(false);
 
   // Zustand store
-  const { addItem, openCart } = useCartStore();
+  const { addItem, openCart, items } = useCartStore();
 
   // Hook para verificar si las compras están pausadas
   const { isPaused, pauseMessage } = useShopPauseStatus();
@@ -94,25 +100,62 @@ const ProductDetail = () => {
         setIsLoadingFavorite(false);
       }
 
-      // Cargar productos relacionados
-      if (fixedProduct.related_products && Array.isArray(fixedProduct.related_products) && fixedProduct.related_products.length > 0) {
-        const { data: relatedData, error: relatedError } = await supabase
+      // Cargar productos relacionados (venta cruzada)
+      const normalizeRelated = (p) => ({
+        ...p,
+        images: typeof p.images === 'string' ? JSON.parse(p.images) : p.images,
+        image_urls: typeof p.image_urls === 'string' ? JSON.parse(p.image_urls) : p.image_urls,
+        image_alts: typeof p.image_alts === 'string' ? JSON.parse(p.image_alts) : p.image_alts,
+      });
+
+      let related = [];
+
+      // 1. Relacionados manuales (definidos en SEO/Rel)
+      if (Array.isArray(fixedProduct.related_products) && fixedProduct.related_products.length > 0) {
+        const { data: manualData, error: manualError } = await supabase
           .from('products')
           .select('*')
           .in('id', fixedProduct.related_products)
           .eq('status', 'active');
+        if (!manualError && manualData) related = manualData;
+      }
 
-        if (!relatedError && relatedData) {
-          // Normalizar productos relacionados (mismo formato que producto actual)
-          const normalizedRelated = relatedData.map(p => ({
-            ...p,
-            images: typeof p.images === 'string' ? JSON.parse(p.images) : p.images,
-            image_urls: typeof p.image_urls === 'string' ? JSON.parse(p.image_urls) : p.image_urls,
-            image_alts: typeof p.image_alts === 'string' ? JSON.parse(p.image_alts) : p.image_alts,
-          }));
-          setRelatedProducts(normalizedRelated);
+      const seen = new Set(related.map(p => p.id));
+
+      // 2. Productos de la misma categoría (venta cruzada automática)
+      if (fixedProduct.category_id) {
+        const { data: sameCatData, error: sameCatError } = await supabase
+          .from('products')
+          .select('*')
+          .eq('status', 'active')
+          .eq('category_id', fixedProduct.category_id)
+          .neq('id', fixedProduct.id)
+          .limit(8);
+        if (!sameCatError && sameCatData) {
+          for (const p of sameCatData) {
+            if (!seen.has(p.id)) { related.push(p); seen.add(p.id); }
+            if (related.length >= 4) break;
+          }
         }
       }
+
+      // 3. Completar con otros productos activos
+      if (related.length < 4) {
+        const { data: otherData, error: otherError } = await supabase
+          .from('products')
+          .select('*')
+          .eq('status', 'active')
+          .neq('id', fixedProduct.id)
+          .limit(20);
+        if (!otherError && otherData) {
+          for (const p of otherData) {
+            if (!seen.has(p.id)) { related.push(p); seen.add(p.id); }
+            if (related.length >= 4) break;
+          }
+        }
+      }
+
+      setRelatedProducts(related.map(normalizeRelated).slice(0, 4));
 
       setIsLoadingProduct(false);
     };
@@ -187,7 +230,7 @@ const ProductDetail = () => {
         title: '¡Añadido al carrito!',
         description: `${quantity} x ${product.name} añadido correctamente.`,
       });
-      openCart();
+      setIsAddedPopupOpen(true);
     } catch (error) {
       console.error('Error al añadir al carrito:', error);
       toast({
@@ -389,7 +432,7 @@ const ProductDetail = () => {
     <div className="container py-8">
       <Link to="/productos" className="flex items-center text-sm text-gray-600 hover:text-gray-800 mb-4">
         <ArrowLeft className="w-4 h-4 mr-1" />
-        Volver a productos
+        {t('product.back')}
       </Link>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -398,7 +441,7 @@ const ProductDetail = () => {
         <div className="relative">
           <div className="flex justify-between items-start mb-4">
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-semibold text-black mr-2">{product.name}</h1>
+              <h1 className="text-2xl font-semibold text-black mr-2">{localize(product, 'name', language)}</h1>
               {user?.email === "vetacreativalaser@gmail.com" && (
                 <Button variant="outline" size="icon" onClick={() => setIsEditOpen(true)}>
                   <Pencil className="w-4 h-4" />
@@ -481,7 +524,7 @@ const ProductDetail = () => {
 
           {/* Selector de cantidad */}
           <div className="mb-6 space-y-2">
-            <Label htmlFor="quantity-input">Cantidad</Label>
+            <Label htmlFor="quantity-input">{t('product.quantity')}</Label>
             <div className="flex items-center gap-3">
               <Button
                 variant="outline"
@@ -508,7 +551,7 @@ const ProductDetail = () => {
               </Button>
               {currentPricing && currentPricing.total > 0 && (
                 <span className="text-sm text-muted-foreground ml-2">
-                  Total: <span className="font-semibold text-foreground">{formatPrice(currentPricing.total)}</span>
+                  {t('product.total')}: <span className="font-semibold text-foreground">{formatPrice(currentPricing.total)}</span>
                 </span>
               )}
               {price?.type === 'byReason' && !selectedReason && (
@@ -523,7 +566,8 @@ const ProductDetail = () => {
           {product.purchase_mode !== 'standard' && (
             <div className="mb-4 p-4 bg-gray-50 rounded-md text-sm">
               <h3 className="font-semibold mb-2">Cómo comprar este producto</h3>
-              <p>¡Gracias por tu interés! Este producto no se puede comprar directamente en la web debido a la cantidad de personalizaciones disponibles. Es mejor que hablemos y una vez concretada la personalización te mandemos el enlace de pago o quedameos localmente para entregartelo.</p>
+              <p>¡Gracias por tu interés! Este producto no se puede comprar directamente en la web debido a la cantidad de personalizaciones disponibles. Es mejor que hablemos y una vez concretada la personalización te mandemos el enlace de pago o quedamos localmente para entregártelo.</p>
+              <p className="mt-2 font-medium text-green-700">Si eres de Vendrell o cercanías, no pagas envío ni cargo por el método de pago: paga en efectivo o Bizum al recogerlo en mano.</p>
               <ol className="list-decimal pl-5 mt-2 space-y-1">
                 <li>Contacta con nosotros a través de WhatsApp o email.</li>
                 <li>Indícanos el producto que te interesa y cualquier personalización.</li>
@@ -557,18 +601,20 @@ const ProductDetail = () => {
               }
             >
               <ShoppingCart className="w-5 h-5 mr-2" />
-              {isPaused ? 'Compras Pausadas' : 'Añadir al carrito'}
+              {isPaused ? t('cart.paused') : t('product.addToCart')}
             </Button>
           ) : (
             <Button
               size="lg"
               className="w-full mb-6 bg-green-600 hover:bg-green-700"
               onClick={() => {
-                const message = `Hola! Estoy interesado en el producto: ${product.name}${
-                  selectedCustomization && Object.keys(selectedCustomization).length > 0
-                    ? `\n\nPersonalización:\n${Object.entries(selectedCustomization)
+                const message = (language === 'ca'
+                  ? `Hola! Estic interessat/da en el producte: ${localize(product, 'name', language)}`
+                  : `Hola! Estoy interesado en el producto: ${localize(product, 'name', language)}`) + `${
+                  customValues && Object.keys(customValues).length > 0
+                    ? (language === 'ca' ? '\n\nPersonalització:\n' : '\n\nPersonalización:\n') + Object.entries(customValues)
                         .map(([key, value]) => `- ${key}: ${value}`)
-                        .join('\n')}`
+                        .join('\n')
                     : ''
                 }`;
                 const whatsappUrl = `https://wa.me/642571133?text=${encodeURIComponent(message)}`;
@@ -584,12 +630,12 @@ const ProductDetail = () => {
 
           {/* Descripción y especificaciones */}
           <div className="text-justify">
-            <h2 className="font-semibold text-lg mb-1">Descripción</h2>
-            <p>{product.full_description}</p>
+            <h2 className="font-semibold text-lg mb-1">{t('product.description')}</h2>
+            <p>{localize(product, 'full_description', language)}</p>
 
             {product.specifications && product.specifications.length > 0 && (
               <>
-                <h3 className="font-semibold text-lg mt-6 mb-2">Especificaciones</h3>
+                <h3 className="font-semibold text-lg mt-6 mb-2">{t('product.specifications')}</h3>
                 <ul className="list-disc pl-5">
                   {product.specifications.map((spec, idx) => (
                     <li key={idx}>{spec}</li>
@@ -602,16 +648,45 @@ const ProductDetail = () => {
         </div>
       </div>
 
-      <div className="mt-12">
-        <h2 className="text-2xl font-semibold mb-4">Opiniones</h2>
-        <ReviewForm productId={product.id} user={user} newReview={newReview} setNewReview={setNewReview} refreshReviews={() => fetchReviews(product.id)} />
-        <ReviewsList reviews={reviews} user={user} refreshReviews={() => fetchReviews(product.id)} />
-      </div>
-
       {/* Productos relacionados */}
       {relatedProducts.length > 0 && (
         <RelatedProducts currentProductId={product.id} allProducts={relatedProducts} />
       )}
+
+      <div className="mt-12">
+        <h2 className="text-2xl font-semibold mb-4">{t('product.opinions')}</h2>
+        <ReviewForm productId={product.id} user={user} newReview={newReview} setNewReview={setNewReview} refreshReviews={() => fetchReviews(product.id)} />
+        <ReviewsList reviews={reviews} user={user} refreshReviews={() => fetchReviews(product.id)} />
+      </div>
+
+      {/* Popup tras añadir al carrito */}
+      <Dialog open={isAddedPopupOpen} onOpenChange={setIsAddedPopupOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('popup.vendrellTitle')}</DialogTitle>
+            <DialogDescription className="text-left">
+              {t('popup.vendrellDesc')}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 mt-4">
+            <Button
+              className="w-full bg-green-600 hover:bg-green-700 text-white"
+              onClick={() => window.open(buildWhatsAppLink(items, language), '_blank')}
+            >
+              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+              </svg>
+              {t('popup.contactWhatsApp')}
+            </Button>
+            <Button className="w-full" onClick={() => { setIsAddedPopupOpen(false); openCart(); }}>
+              {t('popup.checkout')}
+            </Button>
+            <Button variant="outline" className="w-full" onClick={() => setIsAddedPopupOpen(false)}>
+              {t('popup.continue')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

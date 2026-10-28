@@ -21,4 +21,13 @@ dist-ssr/
 .vscode/
 .idea/
 
+# Archivos comprimidos y de sistema
+*.rar
+*.zip
+desktop.ini
+Thumbs.db
+
+# Logs locales de desarrollo
+dev-*.log
+
 nul

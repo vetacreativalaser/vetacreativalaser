@@ -6,6 +6,8 @@ import Footer from '@/components/Footer';
 import WhatsAppButton from '@/components/WhatsAppButton';
 import CartDrawer from '@/components/commerce/cart/CartDrawer';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { LanguageProvider } from '@/contexts/LanguageContext';
+import LanguagePopup from '@/components/LanguagePopup';
 
 const Home = lazy(() => import('@/pages/Home'));
 const Products = lazy(() => import('@/pages/Products'));
@@ -114,6 +116,7 @@ function AppContent() {
       <Footer />
       <WhatsAppButton />
       <CartDrawer />
+      <LanguagePopup />
       <Toaster />
     </div>
   );
@@ -123,7 +126,9 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <AppContent />
+        <LanguageProvider>
+          <AppContent />
+        </LanguageProvider>
       </AuthProvider>
     </Router>
   );

@@ -6,10 +6,13 @@ import { Heart, Trash2, ShoppingBag, MessageCircle } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { localize } from '@/i18n/localize';
 
 const Wishlist = () => {
   const [favoriteItemsDetails, setFavoriteItemsDetails] = useState([]);
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -77,7 +80,9 @@ const Wishlist = () => {
 
   const handleContactAboutProduct = (productName) => {
     const phoneNumber = '642571133';
-    const message = encodeURIComponent(`¡Hola! Estoy interesado/a en el producto "${productName}" de mis favoritos.`);
+    const message = encodeURIComponent(language === 'ca'
+      ? `Hola! Estic interessat/da en el producte "${productName}" dels meus favorits.`
+      : `¡Hola! Estoy interesado/a en el producto "${productName}" de mis favoritos.`);
     window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
   };
 
@@ -109,8 +114,8 @@ const Wishlist = () => {
           className="text-center mb-10"
         >
           <Heart className="h-12 w-12 text-black mx-auto mb-4" strokeWidth={1.5} />
-          <h1 className="text-4xl font-semibold text-black mb-3">Mis Favoritos</h1>
-          <p className="text-lg text-gray-600">Tus productos preferidos guardados en un solo lugar.</p>
+          <h1 className="text-4xl font-semibold text-black mb-3">{t('wishlist.title')}</h1>
+          <p className="text-lg text-gray-600">{t('wishlist.subtitle')}</p>
         </motion.div>
 
         {favoriteItemsDetails.length === 0 ? (
@@ -120,11 +125,11 @@ const Wishlist = () => {
             className="text-center py-12"
           >
             <ShoppingBag className="h-16 w-16 text-gray-400 mx-auto mb-6" strokeWidth={1} />
-            <p className="text-xl text-gray-500 mb-4">Tu lista de favoritos está vacía.</p>
-            <p className="text-gray-500 mb-6">Añade productos que te gusten para verlos aquí.</p>
+            <p className="text-xl text-gray-500 mb-4">{t('wishlist.empty')}</p>
+            <p className="text-gray-500 mb-6">{t('wishlist.emptyDesc')}</p>
             <Link to="/productos">
               <Button variant="outline" className="border-black text-black hover:bg-black hover:text-white">
-                Explorar Productos
+                {t('wishlist.explore')}
               </Button>
             </Link>
           </motion.div>
@@ -155,7 +160,7 @@ const Wishlist = () => {
                   </Link>
                   <div className="flex-grow">
                     <Link to={`/productos/${item.id}`}>
-                      <h2 className="text-lg font-medium text-black hover:underline">{item.name}</h2>
+                      <h2 className="text-lg font-medium text-black hover:underline">{localize(item, 'name', language)}</h2>
                     </Link>
                     <p className="text-gray-500 text-sm">{renderProductPrice(item.price)} €</p>
                   </div>
@@ -167,7 +172,7 @@ const Wishlist = () => {
                     className="border-gray-300 hover:border-black text-xs w-full sm:w-auto"
                     onClick={() => handleContactAboutProduct(item.name)}
                   >
-                    <MessageCircle className="mr-2 h-3 w-3 sm:hidden md:inline-block" /> Contactar
+                    <MessageCircle className="mr-2 h-3 w-3 sm:hidden md:inline-block" /> {t('wishlist.contact')}
                   </Button>
                   <Button
                     variant="ghost"
@@ -175,7 +180,7 @@ const Wishlist = () => {
                     className="text-gray-400 hover:text-red-500 w-full sm:w-auto"
                     onClick={() => removeFromFavorites(item.id)}
                   >
-                    <Trash2 className="mr-2 h-3 w-3 sm:hidden md:inline-block" /> Eliminar
+                    <Trash2 className="mr-2 h-3 w-3 sm:hidden md:inline-block" /> {t('wishlist.remove')}
                   </Button>
                 </div>
               </motion.div>

@@ -213,11 +213,8 @@ function calculateItemPrice(
  * TODO: Expandir con zonas (Península, Baleares, Canarias)
  */
 function calculateShippingCost(totalWeight: number): number {
-  if (totalWeight < 2) {
-    return 500; // 5€ en céntimos
-  } else {
-    return 800; // 8€ en céntimos
-  }
+  // Envío peninsular fijo: 5€ (en céntimos)
+  return 500;
 }
 
 /**
@@ -301,7 +298,7 @@ serve(async (req) => {
     const productIds = cartItems.map((item) => item.productId);
     const { data: products, error: dbError } = await supabaseClient
       .from('products')
-      .select('id, name, price, shipping_weight, purchase_mode, images, image_urls')
+      .select('id, name, price, shipping_weight, purchase_mode, images')
       .in('id', productIds);
 
     if (dbError) {
@@ -347,6 +344,7 @@ serve(async (req) => {
     // 6. Calcular line_items y peso total
     const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
     let totalWeight = 0;
+    let subtotalCents = 0;
     const itemsMetadata: any[] = [];
 
     for (const cartItem of cartItems) {
@@ -416,6 +414,8 @@ serve(async (req) => {
         quantity: cartItem.quantity,
       });
 
+      subtotalCents += unitAmountCents * cartItem.quantity;
+
       // Guardar metadata del item para el webhook
       itemsMetadata.push({
         productId: product.id,
@@ -429,17 +429,32 @@ serve(async (req) => {
       });
     }
 
-    // 7. Calcular y añadir gastos de envío
+    // 7. Calcular y añadir gastos de envío (peninsular 5€)
     const shippingCostCents = calculateShippingCost(totalWeight);
 
     lineItems.push({
       price_data: {
         currency: 'eur',
         product_data: {
-          name: 'Gastos de envío',
+          name: 'Envío peninsular',
           description: 'Envío a península',
         },
         unit_amount: shippingCostCents,
+      },
+      quantity: 1,
+    });
+
+    // 7.5. Comisión por pago con tarjeta (Stripe): 1.5% + 0.25€
+    const cardCommissionCents = Math.round(subtotalCents * 0.015 + 25);
+
+    lineItems.push({
+      price_data: {
+        currency: 'eur',
+        product_data: {
+          name: 'Comisión pago con tarjeta',
+          description: '1.5% + 0.25€ (Stripe)',
+        },
+        unit_amount: cardCommissionCents,
       },
       quantity: 1,
     });
@@ -462,6 +477,7 @@ serve(async (req) => {
           cartItemsCount: cartItems.length.toString(),
           totalWeight: totalWeight.toFixed(2),
           shippingCost: (shippingCostCents / 100).toFixed(2),
+          cardCommission: (cardCommissionCents / 100).toFixed(2),
           // Guardar items en JSON para el webhook
           items: JSON.stringify(itemsMetadata),
           // Guardar userId para vincular el pedido al usuario autenticado

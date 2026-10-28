@@ -41,6 +41,7 @@ const ProductForm = ({ open, onOpenChange, product = null, onSaved }) => {
     status: 'draft',
     is_featured: false,
     purchase_mode: 'standard',
+    priority: 0,
 
     // Pricing Tab
     price: {
@@ -123,6 +124,7 @@ const ProductForm = ({ open, onOpenChange, product = null, onSaved }) => {
         status: product.status || 'draft',
         is_featured: product.is_featured || false,
         purchase_mode: product.purchase_mode || 'standard',
+        priority: product.priority || 0,
 
         price: normalizedPrice,
 
@@ -404,6 +406,7 @@ const ProductForm = ({ open, onOpenChange, product = null, onSaved }) => {
         status: formData.status,
         is_featured: formData.is_featured,
         purchase_mode: formData.purchase_mode,
+        priority: parseInt(formData.priority) || 0,
 
         price: normalizedPrice,
 
@@ -465,6 +468,7 @@ const ProductForm = ({ open, onOpenChange, product = null, onSaved }) => {
           status: 'draft',
           is_featured: false,
           purchase_mode: 'standard',
+          priority: 0,
           price: { type: 'fixed', value: 0 },
           shipping_length: null,
           shipping_width: null,

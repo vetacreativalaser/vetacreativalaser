@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { User, ShoppingBag, Mail, Star, LogOut, Package } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 // Componentes modulares
 import ProfileHeader from './components/ProfileHeader';
@@ -16,6 +17,7 @@ import OrdersTab from './components/OrdersTab';
 const Profile = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [reviews, setReviews] = useState([]);
   const [favorites, setFavorites] = useState([]);
   const [products, setProducts] = useState([]);
@@ -82,7 +84,7 @@ const Profile = () => {
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="text-center">
           <div className="w-12 h-12 border-3 border-gray-300 border-t-gray-900 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 text-sm">Cargando perfil...</p>
+          <p className="text-gray-600 text-sm">{t('profile.loading')}</p>
         </div>
       </div>
     );
@@ -101,14 +103,14 @@ const Profile = () => {
                 className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 text-sm font-medium text-gray-700 rounded-md data-[state=active]:bg-black data-[state=active]:text-white transition-colors min-w-[44px]"
               >
                 <User className="w-4 h-4" />
-                <span className="hidden sm:inline">Principal</span>
+                <span className="hidden sm:inline">{t('profile.principal')}</span>
               </TabsTrigger>
               <TabsTrigger
                 value="info"
                 className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 text-sm font-medium text-gray-700 rounded-md data-[state=active]:bg-black data-[state=active]:text-white transition-colors min-w-[44px]"
               >
                 <Mail className="w-4 h-4" />
-                <span className="hidden sm:inline">Información</span>
+                <span className="hidden sm:inline">{t('profile.info')}</span>
               </TabsTrigger>
              
               <TabsTrigger
@@ -116,14 +118,14 @@ const Profile = () => {
                 className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 text-sm font-medium text-gray-700 rounded-md data-[state=active]:bg-black data-[state=active]:text-white transition-colors min-w-[44px]"
               >
                 <Package className="w-4 h-4" />
-                <span className="hidden sm:inline">Pedidos</span>
+                <span className="hidden sm:inline">{t('profile.orders')}</span>
               </TabsTrigger>
               <TabsTrigger
                 value="reseñas"
                 className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 text-sm font-medium text-gray-700 rounded-md data-[state=active]:bg-black data-[state=active]:text-white transition-colors min-w-[44px]"
               >
                 <Star className="w-4 h-4" />
-                <span className="hidden sm:inline">Reseñas</span>
+                <span className="hidden sm:inline">{t('profile.reviews')}</span>
               </TabsTrigger>
             </TabsList>
           </div>
@@ -134,15 +136,15 @@ const Profile = () => {
               <div className="lg:col-span-3 grid grid-cols-3 gap-4">
                 <div className="bg-white border border-gray-200 rounded-lg p-6 text-center">
                   <div className="text-3xl font-bold text-gray-900">{purchases.length}</div>
-                  <div className="text-sm text-gray-600 mt-1">Compras</div>
+                  <div className="text-sm text-gray-600 mt-1">{t('profile.purchases')}</div>
                 </div>
                 <div className="bg-white border border-gray-200 rounded-lg p-6 text-center">
                   <div className="text-3xl font-bold text-gray-900">{reviews.length}</div>
-                  <div className="text-sm text-gray-600 mt-1">Reseñas</div>
+                  <div className="text-sm text-gray-600 mt-1">{t('profile.reviews')}</div>
                 </div>
                 <div className="bg-white border border-gray-200 rounded-lg p-6 text-center">
                   <div className="text-3xl font-bold text-gray-900">{favorites.length}</div>
-                  <div className="text-sm text-gray-600 mt-1">Favoritos</div>
+                  <div className="text-sm text-gray-600 mt-1">{t('profile.favorites')}</div>
                 </div>
               </div>
 
@@ -153,22 +155,22 @@ const Profile = () => {
 
               {/* Información rápida */}
               <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Mi cuenta</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('profile.account')}</h2>
                 <div className="space-y-3">
                   <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wide">Nombre</p>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">{t('profile.name')}</p>
                     <p className="text-sm text-gray-900 font-medium mt-1">
-                      {formData.name || 'No especificado'}
+                      {formData.name || t('profile.notSpecified')}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wide">Email</p>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">{t('profile.email')}</p>
                     <p className="text-sm text-gray-900 font-medium mt-1">{formData.email}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wide">Teléfono</p>
+                    <p className="text-xs text-gray-500 uppercase tracking-wide">{t('profile.phone')}</p>
                     <p className="text-sm text-gray-900 font-medium mt-1">
-                      {formData.phone || 'No especificado'}
+                      {formData.phone || t('profile.notSpecified')}
                     </p>
                   </div>
                 </div>
@@ -198,7 +200,7 @@ const Profile = () => {
             onClick={handleLogout}
           >
             <LogOut className="w-4 h-4 mr-2" />
-            Cerrar sesión
+            {t('profile.logout')}
           </Button>
         </div>
       </div>

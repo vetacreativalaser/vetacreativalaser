@@ -5,8 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/use-toast';
 import { Mail, Phone, MapPin, Clock, MessageSquare } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const Contact = () => {
+  const { t, language } = useLanguage();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -40,8 +42,8 @@ const Contact = () => {
 
       if (response.ok) {
         toast({
-          title: "Mensaje Enviado",
-          description: "Gracias por contactarnos. Te responderemos pronto.",
+          title: t('contact.sentTitle'),
+          description: t('contact.sentDesc'),
         });
         setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
       } else {
@@ -60,31 +62,17 @@ const Contact = () => {
 
   const handleWhatsAppClick = () => {
     const phoneNumber = '642571133';
-    const message = encodeURIComponent('¡Hola! Me gustaría obtener más información sobre sus productos de corte láser.');
+    const message = encodeURIComponent(language === 'ca'
+      ? 'Hola! M\u2019agradaria obtenir més informació sobre els vostres productes de tall làser.'
+      : '¡Hola! Me gustaría obtener más información sobre sus productos de corte láser.');
     window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
   };
 
   const contactInfo = [
-    {
-      icon: <Mail className="h-5 w-5" strokeWidth={1.5}/>,
-      title: 'Email',
-      info: 'vetacreativalaser@gmail.com',
-    },
-    {
-      icon: <Phone className="h-5 w-5" strokeWidth={1.5}/>,
-      title: 'Teléfono',
-      info: '642 571 133',
-    },
-    {
-      icon: <MapPin className="h-5 w-5" strokeWidth={1.5}/>,
-      title: 'Ubicación',
-      info: 'España',
-    },
-    {
-      icon: <Clock className="h-5 w-5" strokeWidth={1.5}/>,
-      title: 'Horario',
-      info: 'Lun - Vie: 16:00 - 20:00',
-    }
+    { icon: <Mail className="h-5 w-5" strokeWidth={1.5}/>, title: t('contact.emailLabel'), info: 'vetacreativalaser@gmail.com' },
+    { icon: <Phone className="h-5 w-5" strokeWidth={1.5}/>, title: t('contact.phoneLabel'), info: '642 571 133' },
+    { icon: <MapPin className="h-5 w-5" strokeWidth={1.5}/>, title: t('contact.locationLabel'), info: t('footer.spain') },
+    { icon: <Clock className="h-5 w-5" strokeWidth={1.5}/>, title: t('contact.hoursLabel'), info: 'Lun - Vie: 16:00 - 20:00' }
   ];
 
   return (
@@ -96,9 +84,9 @@ const Contact = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl font-semibold text-black mb-3">Contáctanos</h1>
+          <h1 className="text-4xl font-semibold text-black mb-3">{t('contact.title')}</h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            ¿Tienes una idea creativa o necesitas un producto personalizado? Estamos aquí para ayudarte.
+            {t('contact.subtitle')}
           </p>
         </motion.div>
 
@@ -109,30 +97,30 @@ const Contact = () => {
             transition={{ duration: 0.7 }}
             className="bg-white p-8 border border-gray-200"
           >
-            <h2 className="text-2xl font-semibold text-black mb-6">Envíanos un Mensaje</h2>
+            <h2 className="text-2xl font-semibold text-black mb-6">{t('contact.formTitle')}</h2>
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
-                <Input type="text" id="name" name="name" value={formData.name} onChange={handleInputChange} required placeholder="Tu nombre completo" className="border-gray-300 focus:border-black focus:ring-black" disabled={isSubmitting}/>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">{t('contact.name')}</label>
+                <Input type="text" id="name" name="name" value={formData.name} onChange={handleInputChange} required placeholder={t('contact.namePlaceholder')} className="border-gray-300 focus:border-black focus:ring-black" disabled={isSubmitting}/>
               </div>
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <Input type="email" id="email" name="email" value={formData.email} onChange={handleInputChange} required placeholder="tu.email@ejemplo.com" className="border-gray-300 focus:border-black focus:ring-black" disabled={isSubmitting}/>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">{t('contact.email')}</label>
+                <Input type="email" id="email" name="email" value={formData.email} onChange={handleInputChange} required placeholder={t('contact.emailPlaceholder')} className="border-gray-300 focus:border-black focus:ring-black" disabled={isSubmitting}/>
               </div>
               <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">Teléfono (Opcional)</label>
-                <Input type="tel" id="phone" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="Tu número de teléfono" className="border-gray-300 focus:border-black focus:ring-black" disabled={isSubmitting}/>
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">{t('contact.phone')}</label>
+                <Input type="tel" id="phone" name="phone" value={formData.phone} onChange={handleInputChange} placeholder={t('contact.phonePlaceholder')} className="border-gray-300 focus:border-black focus:ring-black" disabled={isSubmitting}/>
               </div>
               <div>
-                <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-1">Asunto</label>
-                <Input type="text" id="subject" name="subject" value={formData.subject} onChange={handleInputChange} required placeholder="Asunto de tu mensaje" className="border-gray-300 focus:border-black focus:ring-black" disabled={isSubmitting}/>
+                <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-1">{t('contact.subject')}</label>
+                <Input type="text" id="subject" name="subject" value={formData.subject} onChange={handleInputChange} required placeholder={t('contact.subjectPlaceholder')} className="border-gray-300 focus:border-black focus:ring-black" disabled={isSubmitting}/>
               </div>
               <div>
-                <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">Mensaje</label>
-                <Textarea id="message" name="message" value={formData.message} onChange={handleInputChange} required rows={5} placeholder="Escribe tu mensaje aquí..." className="border-gray-300 focus:border-black focus:ring-black" disabled={isSubmitting}/>
+                <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">{t('contact.message')}</label>
+                <Textarea id="message" name="message" value={formData.message} onChange={handleInputChange} required rows={5} placeholder={t('contact.messagePlaceholder')} className="border-gray-300 focus:border-black focus:ring-black" disabled={isSubmitting}/>
               </div>
               <Button type="submit" size="lg" className="w-full bg-black text-white hover:bg-gray-800 py-3 uppercase tracking-wider text-sm font-semibold" disabled={isSubmitting}>
-                {isSubmitting ? 'Enviando...' : 'Enviar Mensaje'}
+                {isSubmitting ? t('contact.sending') : t('contact.send')}
               </Button>
             </form>
           </motion.div>
@@ -144,7 +132,7 @@ const Contact = () => {
             className="space-y-8"
           >
             <div className="bg-gray-50 p-8 border border-gray-200">
-              <h2 className="text-2xl font-semibold text-black mb-6">Información de Contacto</h2>
+              <h2 className="text-2xl font-semibold text-black mb-6">{t('contact.infoTitle')}</h2>
               <div className="space-y-5">
                 {contactInfo.map((item, index) => (
                   <div key={index} className="flex items-start space-x-3">
@@ -160,14 +148,14 @@ const Contact = () => {
 
             <div className="bg-green-50 p-6 border border-green-200 text-center">
               <MessageSquare className="h-8 w-8 text-green-600 mx-auto mb-3" strokeWidth={1.5} />
-              <h3 className="text-lg font-semibold text-green-800 mb-2">¿Prefieres WhatsApp?</h3>
-              <p className="text-green-700 text-sm mb-4">Contacta directamente para una respuesta más rápida y personalizada.</p>
-              <Button 
+              <h3 className="text-lg font-semibold text-green-800 mb-2">{t('contact.whatsappTitle')}</h3>
+              <p className="text-green-700 text-sm mb-4">{t('contact.whatsappDesc')}</p>
+              <Button
                 onClick={handleWhatsAppClick}
                 variant="outline"
                 className="border-green-600 text-green-600 hover:bg-green-600 hover:text-white"
               >
-                Chatear por WhatsApp
+                {t('contact.whatsappChat')}
               </Button>
             </div>
 

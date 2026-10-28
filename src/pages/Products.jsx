@@ -6,6 +6,8 @@ import { Heart } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { localize } from '@/i18n/localize';
 
 const Products = () => {
   const [searchParams] = useSearchParams();
@@ -14,6 +16,7 @@ const Products = () => {
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [isLoadingFavorites, setIsLoadingFavorites] = useState(false);
   const { user } = useAuth();
+  const { t, language } = useLanguage();
 
   const categoryId = searchParams.get('category_id'); // ⚠️ aquí leemos el ID numérico
 
@@ -26,10 +29,9 @@ const Products = () => {
         .from('products')
         .select(`
           *,
-          categorias:category_id ( title )
+          categorias:category_id ( title, fijada, sort_order )
         `)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false });
+        .eq('status', 'active');
 
       if (categoryId) {
         query = query.eq('category_id', categoryId);
@@ -40,7 +42,25 @@ const Products = () => {
         console.error("Error cargando productos:", error);
         toast({ title: "Error", description: "No se pudieron cargar los productos.", variant: "destructive" });
       } else {
-        setProducts(data || []);
+        // Ordenar: categorías fijadas primero (por sort_order), luego prioridad, luego nombre
+        const sorted = [...(data || [])].sort((a, b) => {
+          const aCat = a.categorias;
+          const bCat = b.categorias;
+          const aPinned = aCat?.fijada ? 0 : 1;
+          const bPinned = bCat?.fijada ? 0 : 1;
+          if (aPinned !== bPinned) return aPinned - bPinned;
+
+          if (aPinned === 0 && (aCat?.sort_order ?? 0) !== (bCat?.sort_order ?? 0)) {
+            return (aCat?.sort_order ?? 0) - (bCat?.sort_order ?? 0);
+          }
+
+          const aPri = a.priority ?? 0;
+          const bPri = b.priority ?? 0;
+          if (aPri !== bPri) return aPri - bPri;
+
+          return (a.name || '').localeCompare(b.name || '');
+        });
+        setProducts(sorted);
       }
 
       setIsLoadingProducts(false);
@@ -119,9 +139,9 @@ const Products = () => {
           transition={{ duration: 0.6, ease: 'easeOut' }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl font-semibold mb-2">PRODUCTOS</h1>
+          <h1 className="text-4xl font-semibold mb-2">{t('products.title')}</h1>
           <p className="text-gray-500">
-            Mostrando {products.length} resultado(s)
+            {products.length} {t('products.showing')}
           </p>
         </motion.div>
 
@@ -178,7 +198,7 @@ const Products = () => {
     <div className="transition-colors duration-300 group-hover:bg-gray-100 px-3 py-3">
       <p className="text-md font-medium text-black text-left leading-snug">
         <Link to={`/productos/${product.id}`}>
-          {product.name}
+          {localize(product, 'name', language)}
         </Link>
       </p>
       <p className="mt-1 text-sm text-left text-gray-500">
@@ -201,7 +221,7 @@ const Products = () => {
         {products.length === 0 && !isLoadingProducts && (
           <div className="text-center py-12">
             <p className="text-lg text-gray-500">
-              No se encontraron productos.
+              {t('products.notFound')}
             </p>
           </div>
         )}

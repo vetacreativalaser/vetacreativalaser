@@ -4,10 +4,13 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { localize } from '@/i18n/localize';
 
 const Home = () => {
   const [categories, setCategories] = useState([]);
   const { user } = useAuth();
+  const { t, language } = useLanguage();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -15,6 +18,7 @@ const Home = () => {
       .from('categorias')
       .select('*')
        .order('fijada', { ascending: false }) // primero fijadas
+       .order('sort_order', { ascending: true }) // luego orden manual
       .order('title', { ascending: true })   // luego alfabéticamente
       .eq('visible', true); // solo visibles
     setCategories(data);
@@ -32,7 +36,7 @@ const Home = () => {
         <img className="absolute inset-0 w-full h-full object-cover opacity-80" alt="Banner de productos en madera" src="https://dspsrnprvrpjrkicxiso.supabase.co/storage/v1/object/public/portadacategorias/banner.webp" />
         <div className="absolute inset-0 bg-black/30" aria-hidden="true" />
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="relative z-10 text-center px-4"><Link to="/productos"><Button aria-label="Ir a productos" variant="outline" size="lg"className="border-2 border-white text-white bg-transparent hover:border-white hover:border-[3px] hover:text-white hover:bg-transparent px-12 py-4 uppercase tracking-wider font-semibold transition-all duration-150 ease-in-out"
-        >Ver Productos</Button></Link></motion.div>
+        >{t('home.seeProducts')}</Button></Link></motion.div>
       </section>
 
       <section className="py-16 bg-white" aria-labelledby="titulo-categorias">
@@ -45,12 +49,18 @@ const Home = () => {
             className="text-center mb-12"
           >
             <h1 id="titulo-categorias" className="text-3xl md:text-4xl font-semibold text-black mb-3">
-              ¿Qué hacemos?
+              {t('home.whatWeDo')}
             </h1>
           </motion.header>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10 px-6 sm:px-0" >
-            {categories.map(({ id, title = 'Sin categoría', description, image_url }, index) => (
+            {categories.map((cat, index) => {
+              const title = localize(cat, 'title', language) || 'Sin categoría';
+              const description = localize(cat, 'description', language);
+              const id = cat.id;
+              const image_url = cat.image_url;
+
+              return (
               <motion.div
                 key={id}
                 initial={{ opacity: 0, y: 30 }}
@@ -81,7 +91,8 @@ const Home = () => {
                   </article>
                 </Link>
               </motion.div>
-            ))}
+              );
+            })}
 
           </div>
         </div>

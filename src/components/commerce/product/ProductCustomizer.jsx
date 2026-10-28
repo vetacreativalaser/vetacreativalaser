@@ -12,6 +12,8 @@ import { useEffect } from 'react';
 import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
 import { Textarea } from '../../ui/textarea';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { localize } from '@/i18n/localize';
 import {
   Select,
   SelectContent,
@@ -41,6 +43,7 @@ import {
  * @returns {JSX.Element|null}
  */
 export default function ProductCustomizer({ customFields, values, onValuesChange }) {
+  const { t, language } = useLanguage();
   /**
    * Effect: Notificar al padre si no hay campos válidos
    * Se ejecuta ANTES de cualquier renderizado
@@ -132,7 +135,7 @@ export default function ProductCustomizer({ customFields, values, onValuesChange
             type="text"
             value={value}
             onChange={(e) => handleFieldChange(field.label, e.target.value)}
-            placeholder={field.placeholder || `Ingresa ${field.label.toLowerCase()}`}
+            placeholder={localize(field, 'placeholder', language) || `Ingresa ${field.label.toLowerCase()}`}
             required={field.required}
             className="w-full"
           />
@@ -144,7 +147,7 @@ export default function ProductCustomizer({ customFields, values, onValuesChange
             id={fieldId}
             value={value}
             onChange={(e) => handleFieldChange(field.label, e.target.value)}
-            placeholder={field.placeholder || `Ingresa ${field.label.toLowerCase()}`}
+            placeholder={localize(field, 'placeholder', language) || `Ingresa ${field.label.toLowerCase()}`}
             required={field.required}
             className="w-full min-h-[100px] resize-y"
             rows={4}
@@ -183,18 +186,21 @@ export default function ProductCustomizer({ customFields, values, onValuesChange
             required={field.required}
           >
             <SelectTrigger id={fieldId} className="w-full">
-              <SelectValue placeholder={field.placeholder || 'Selecciona una opción'} />
+              <SelectValue placeholder={field.placeholder || t('product.selectOption')} />
             </SelectTrigger>
             <SelectContent>
               {field.options.map((opt, idx) => {
                 // Soportar formato antiguo (string) y nuevo (objeto)
                 const option = typeof opt === 'string' ? { value: opt, label: opt, extraCost: 0 } : opt;
+                // Mostrar traducción si existe (value_ca/label_ca); guardar el valor original
+                const optionLabel = localize(option, 'value', language) || localize(option, 'label', language) || '';
+                const optionValue = option.value || option.label || '';
                 const displayLabel = option.extraCost > 0
-                  ? `${option.label} (+${option.extraCost.toFixed(2)}€)`
-                  : option.label;
+                  ? `${optionLabel} (+${option.extraCost.toFixed(2)}€)`
+                  : optionLabel;
 
                 return (
-                  <SelectItem key={idx} value={option.value}>
+                  <SelectItem key={idx} value={optionValue}>
                     {displayLabel}
                   </SelectItem>
                 );
@@ -217,9 +223,9 @@ export default function ProductCustomizer({ customFields, values, onValuesChange
     <div className="space-y-4">
       {/* Header de sección */}
       <div className="border-b pb-2">
-        <h3 className="text-lg font-semibold">Personalización</h3>
+        <h3 className="text-lg font-semibold">{t('product.customization')}</h3>
         <p className="text-sm text-muted-foreground">
-          Completa los campos para personalizar tu producto
+          {t('product.completeFields')}
         </p>
       </div>
 
@@ -231,7 +237,7 @@ export default function ProductCustomizer({ customFields, values, onValuesChange
               htmlFor={`custom-field-${field.label.toLowerCase().replace(/\s+/g, '-')}`}
               className="text-sm font-medium"
             >
-              {field.label}
+              {localize(field, 'label', language)}
               {field.required && (
                 <span className="text-destructive ml-1" aria-label="Campo obligatorio">
                   *
@@ -246,7 +252,7 @@ export default function ProductCustomizer({ customFields, values, onValuesChange
       {/* Mensaje de ayuda para campos obligatorios */}
       {customFields.some(f => f.required) && (
         <p className="text-xs text-muted-foreground mt-4">
-          <span className="text-destructive">*</span> Campos obligatorios
+          <span className="text-destructive">*</span> {t('product.requiredFields')}
         </p>
       )}
     </div>

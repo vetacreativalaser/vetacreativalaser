@@ -10,6 +10,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import CartTrigger from '@/components/commerce/cart/CartTrigger';
 import { supabase } from '@/lib/supabaseClient';
 import { formatPrice } from '@/lib/priceUtils';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { localize } from '@/i18n/localize';
 
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -23,12 +25,13 @@ const Header = () => {
   const searchRef = useRef(null);
   const mobileMenuRef = useRef(null);
   const { user } = useAuth();
+  const { t, language } = useLanguage();
 
   const navigation = [
-    { name: 'Inicio', href: '/' },
-    { name: 'Productos', href: '/productos' },
-    { name: 'Sobre nosotros', href: '/sobre-nosotros' },
-    { name: 'Contáctanos', href: '/contacto' },
+    { labelKey: 'nav.home', href: '/' },
+    { labelKey: 'nav.products', href: '/productos' },
+    { labelKey: 'nav.about', href: '/sobre-nosotros' },
+    { labelKey: 'nav.contact', href: '/contacto' },
   ];
 
   const isActive = (path) => location.pathname === path;
@@ -48,19 +51,13 @@ const Header = () => {
       }
 
       setIsSearching(true);
-      const normalizedQuery = searchTerm.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-      const lowerQuery = `%${normalizedQuery}%`;
 
       try {
         const { data, error } = await supabase
-          .from('products')
-          .select('id, name, price, images, image_urls, image_alts')
-          .eq('status', 'active')
-          .or(`name.ilike.${lowerQuery},full_description.ilike.${lowerQuery}`)
-          .limit(5);
+          .rpc('search_products', { search_term: searchTerm.trim() });
 
         if (error) throw error;
-        setSearchResults(data || []);
+        setSearchResults((data || []).slice(0, 5));
         setShowDropdown(true);
       } catch (error) {
         console.error('Error buscando productos:', error);
@@ -169,16 +166,16 @@ const Header = () => {
             <div className="hidden md:flex items-center">
               <nav className="flex space-x-5 mr-4">
                 {navigation.map((item) => (
-                  <div key={item.name} className={`relative group nav-link-${isActive(item.href) ? 'active' : ''}`}>
+                  <div key={item.labelKey} className={`relative group nav-link-${isActive(item.href) ? 'active' : ''}`}>
                     <Link
                       to={item.href}
                       className={`text-[15px] font-normal normal-case tracking-normal py-2 ${
                         isActive(item.href)
                           ? 'text-black'
                           : 'text-gray-500 hover:text-black'
-                      } ${item.name === 'Inicio' ? 'hover:bg-transparent' : ''}`}
+                      } ${item.labelKey === 'nav.home' ? 'hover:bg-transparent' : ''}`}
                     >
-                      {item.name}
+                      {t(item.labelKey)}
                     </Link>
                     <span className="nav-link-underline"></span>
                   </div>
@@ -237,16 +234,16 @@ const Header = () => {
                 <div className="p-5 space-y-3">
                   {navigation.map((item) => (
                     <Link
-                      key={item.name}
+                      key={item.labelKey}
                       to={item.href}
                       className={`block px-3 py-2.5 text-base font-normal normal-case tracking-normal rounded-md ${
                         isActive(item.href)
                           ? 'text-black bg-gray-100'
                           : 'text-gray-600 hover:text-black hover:bg-gray-50'
-                      } ${item.name === 'Inicio' ? 'hover:bg-transparent' : ''}`}
+                      } ${item.labelKey === 'nav.home' ? 'hover:bg-transparent' : ''}`}
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      {item.name}
+                      {t(item.labelKey)}
                     </Link>
                   ))}
 
@@ -264,7 +261,7 @@ const Header = () => {
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     <User className="h-5 w-5" strokeWidth={1.5} />
-                    <span>{user ? 'Mi Perfil' : 'Iniciar Sesión'}</span>
+                    <span>{user ? t('nav.profile') : t('nav.login')}</span>
                   </Link>
                 </div>
               </motion.div>
@@ -294,7 +291,7 @@ const Header = () => {
               >
                 <Input
                   type="search"
-                  placeholder="Buscar productos..."
+                  placeholder={t('nav.searchPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="flex-grow border-gray-300 focus:border-black focus:ring-black text-base"
@@ -342,7 +339,7 @@ const Header = () => {
                           {/* Info del producto */}
                           <div className="flex-grow min-w-0">
                             <p className="text-sm font-medium text-gray-900 truncate">
-                              {product.name}
+                              {localize(product, 'name', language)}
                             </p>
                             <p className="text-xs text-gray-500">
                               {(() => {
@@ -368,7 +365,7 @@ const Header = () => {
                         type="submit"
                         className="w-full px-4 py-3 text-sm text-center text-black font-medium hover:bg-gray-50 transition-colors border-t border-gray-200"
                       >
-                        Ver todos los resultados
+                        {t('nav.viewAllResults')}
                       </button>
                     </motion.div>
                   )}

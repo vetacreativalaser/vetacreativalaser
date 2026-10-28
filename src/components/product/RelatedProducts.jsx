@@ -1,8 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { localize } from '@/i18n/localize';
 
 const RelatedProducts = ({ currentProductId, allProducts }) => {
+  const { t, language } = useLanguage();
   const related = allProducts.filter(p => p.id !== currentProductId).slice(0, 4);
   if (related.length === 0) return null;
 
@@ -15,7 +18,7 @@ const RelatedProducts = ({ currentProductId, allProducts }) => {
       className="mt-16 pt-12 border-t border-gray-200"
     >
       <h2 className="text-2xl font-semibold text-black mb-8 text-center">
-        También te podría interesar
+        {t('related.title')}
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-10">
         {related.map((product, index) => (
@@ -57,7 +60,7 @@ const RelatedProducts = ({ currentProductId, allProducts }) => {
             <div className="transition-colors duration-300 group-hover:bg-gray-100 px-3 py-3">
               <p className="text-md font-medium text-black text-left leading-snug">
                 <Link to={`/productos/${product.id}`}>
-                  {product.name}
+                  {localize(product, 'name', language)}
                 </Link>
               </p>
               <p className="mt-1 text-sm text-left text-gray-500">

@@ -6,6 +6,8 @@ import { Heart, Search as SearchIconPlain, ArrowLeft } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { localize } from '@/i18n/localize';
 
 const normalizeText = (text) => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
@@ -26,6 +28,7 @@ const SearchResults = () => {
   const [results, setResults] = useState([]);
   const [favorites, setFavorites] = useState([]);
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   const [isLoadingFavorites, setIsLoadingFavorites] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
 
@@ -39,13 +42,9 @@ const SearchResults = () => {
       }
 
       setIsLoadingProducts(true);
-      const lowerQuery = `%${normalizeText(query)}%`;
 
       const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('status', 'active')
-        .or(`name.ilike.${lowerQuery},full_description.ilike.${lowerQuery}`);
+        .rpc('search_products', { search_term: query.trim() });
 
       if (error) {
         console.error('Error searching products:', error);
@@ -119,14 +118,14 @@ const SearchResults = () => {
           className="text-center mb-12"
         >
           <SearchIconPlain className="h-10 w-10 mx-auto mb-3 text-black" strokeWidth={2} />
-          <h1 className="text-3xl font-semibold mb-2">Resultados de Búsqueda para "{query}"</h1>
-          <p className="text-gray-500">{results.length} producto(s) encontrado(s).</p>
+          <h1 className="text-3xl font-semibold mb-2">{t('search.title')} "{query}"</h1>
+          <p className="text-gray-500">{results.length} {t('search.results')}</p>
           <Button
             variant="outline"
             onClick={() => navigate('/productos')}
             className="mt-4 border-black text-black hover:bg-black hover:text-white"
           >
-            <ArrowLeft className="mr-2 h-4 w-4" /> Volver a Productos
+            <ArrowLeft className="mr-2 h-4 w-4" /> {t('products.back')}
           </Button>
         </motion.div>
 
@@ -184,7 +183,7 @@ const SearchResults = () => {
                 <div className="transition-colors duration-300 group-hover:bg-gray-100 px-3 py-3">
                   <p className="text-md font-medium text-black text-left leading-snug">
                     <Link to={`/productos/${product.id}`}>
-                      {product.name}
+                      {localize(product, 'name', language)}
                     </Link>
                   </p>
                   <p className="mt-1 text-sm text-left text-gray-500">{renderProductPrice(product.price)}</p>
@@ -195,7 +194,7 @@ const SearchResults = () => {
         ) : (
           <div className="text-center py-12">
             <p className="text-lg text-gray-500">
-              No se encontraron productos que coincidan con tu búsqueda. Intenta con otros términos.
+              {t('search.notFound')}
             </p>
           </div>
         )}

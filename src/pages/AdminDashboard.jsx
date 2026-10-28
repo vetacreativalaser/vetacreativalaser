@@ -58,6 +58,7 @@ const AdminDashboard = () => {
   const closeCategoryModal = () => setIsCategoryModalOpen(false);
   const [categories, setCategories] = useState([]);
   const [editingCategory, setEditingCategory] = useState(null);
+  const [draggedCategoryId, setDraggedCategoryId] = useState(null);
 
   // Estado para ProductForm
   const [isProductFormOpen, setIsProductFormOpen] = useState(false);
@@ -133,6 +134,7 @@ const AdminDashboard = () => {
       .from('categorias')
       .select('*')
       .order('fijada', { ascending: false })
+      .order('sort_order', { ascending: true })
       .order('created_at', { ascending: false });
 
     if (categoriesError) {
@@ -425,6 +427,40 @@ const handleDeleteCategory = async (categoryId) => {
     toast({ title: "Categoría Eliminada" });
   }
   setIsLoading(false);
+};
+
+// Drag & drop de categorías
+const handleCategoryDragStart = (e, catId) => {
+  setDraggedCategoryId(catId);
+  e.dataTransfer.effectAllowed = 'move';
+  try { e.dataTransfer.setData('text/plain', String(catId)); } catch (err) {}
+};
+
+const handleCategoryDragOver = (e) => {
+  e.preventDefault();
+};
+
+const handleCategoryDrop = async (e, targetId) => {
+  e.preventDefault();
+  const draggedId = draggedCategoryId;
+  if (!draggedId || draggedId === targetId) return;
+
+  const fromIdx = categories.findIndex(c => c.id === draggedId);
+  const toIdx = categories.findIndex(c => c.id === targetId);
+  if (fromIdx === -1 || toIdx === -1) return;
+
+  const reordered = [...categories];
+  const [moved] = reordered.splice(fromIdx, 1);
+  reordered.splice(toIdx, 0, moved);
+
+  setCategories(reordered);
+  setDraggedCategoryId(null);
+
+  const updates = reordered.map((c, i) => ({ id: c.id, sort_order: i }));
+  await Promise.all(
+    updates.map(u => supabase.from('categorias').update({ sort_order: u.sort_order }).eq('id', u.id))
+  );
+  toast({ title: "Orden actualizado", description: "Se ha guardado el nuevo orden de categorías." });
 };
 
   //Condiciones importantes
@@ -1178,8 +1214,22 @@ const handleDeleteCategory = async (categoryId) => {
                   <p className="text-gray-500">No hay categorías.</p>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {categories.map((cat) => (
-                      <div key={cat.id} className="border p-4 bg-white shadow-sm rounded">
+                    {categories.map((cat, index) => (
+                      <div
+                        key={cat.id}
+                        draggable
+                        onDragStart={(e) => handleCategoryDragStart(e, cat.id)}
+                        onDragOver={handleCategoryDragOver}
+                        onDrop={(e) => handleCategoryDrop(e, cat.id)}
+                        className={`border p-4 bg-white shadow-sm rounded cursor-grab active:cursor-grabbing transition-opacity ${draggedCategoryId === cat.id ? 'opacity-40' : 'opacity-100'}`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs text-gray-400">Posición {index + 1}</span>
+                          <div className="flex items-center gap-1">
+                            {cat.fijada && <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">Fijada</span>}
+                            <span className="text-gray-300 cursor-move" title="Arrastra para reordenar">⠿</span>
+                          </div>
+                        </div>
                         <img src={cat.image_url} alt={cat.title} className="w-full h-40 object-cover rounded mb-2" />
                         <h3 className="text-lg font-semibold">{cat.title}</h3>
                         <p className="text-sm text-gray-600 mb-3">{cat.description}</p>

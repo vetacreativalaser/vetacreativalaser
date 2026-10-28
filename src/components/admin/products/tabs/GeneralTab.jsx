@@ -194,6 +194,26 @@ const GeneralTab = ({ formData, updateField }) => {
           Soporte para texto enriquecido. Describe el producto en detalle.
         </p>
       </div>
+      {/* Prioridad (orden de aparición) */}
+      <div className="space-y-2">
+        <Label htmlFor="priority" className="text-sm font-medium">
+          Prioridad
+        </Label>
+        <Input
+          id="priority"
+          type="number"
+          min="0"
+          step="1"
+          placeholder="0"
+          value={formData.priority ?? 0}
+          onChange={(e) => updateField('priority', e.target.value)}
+          className="w-full"
+        />
+        <p className="text-xs text-gray-500">
+          Menor número = aparece antes en su categoría (0 primero, 1 después...). Si coinciden, se ordena por nombre.
+        </p>
+      </div>
+
       {/* Especificaciones del producto */}
       <div className="space-y-2 mt-4">
         <Label className="font-semibold">Especificaciones</Label>

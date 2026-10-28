@@ -42,7 +42,7 @@ const SeoRelTab = ({ formData, updateField }) => {
     try {
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, images')
+        .select('id, name, sku, images')
         .in('id', formData.related_products);
 
       if (error) throw error;
@@ -70,7 +70,7 @@ const SeoRelTab = ({ formData, updateField }) => {
     return null;
   };
 
-  // Buscar productos por nombre
+  // Buscar productos por nombre, ID o SKU
   const searchProducts = async () => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
@@ -86,21 +86,25 @@ const SeoRelTab = ({ formData, updateField }) => {
       // Obtener TODOS los productos activos (el filtrado se hará en cliente)
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, images')
+        .select('id, name, sku, images')
         .eq('status', 'active');
 
       if (error) throw error;
 
-      // Filtrar en cliente: normalizar nombres y buscar coincidencia
+      // Filtrar en cliente: buscar por nombre, ID o SKU
       const relatedIds = formData.related_products || [];
       const filtered = (data || [])
         .filter(p => {
           // Excluir productos ya relacionados y el producto actual
           if (relatedIds.includes(p.id) || p.id === formData.id) return false;
 
-          // Normalizar nombre del producto y buscar coincidencia
-          const normalizedName = p.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-          return normalizedName.includes(normalizedQuery);
+          const normalizedName = (p.name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+          const normalizedSku = (p.sku || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+          const idString = String(p.id);
+
+          return normalizedName.includes(normalizedQuery)
+            || normalizedSku.includes(normalizedQuery)
+            || idString.includes(normalizedQuery);
         })
         .slice(0, 10); // Limitar a 10 resultados
 
@@ -280,7 +284,7 @@ const SeoRelTab = ({ formData, updateField }) => {
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Buscar por nombre del producto..."
+                placeholder="Buscar por nombre, ID o SKU..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && searchProducts()}
@@ -325,7 +329,7 @@ const SeoRelTab = ({ formData, updateField }) => {
                     {/* Info del producto */}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
-                      <p className="text-xs text-gray-500">ID: {product.id}</p>
+                      <p className="text-xs text-gray-500">ID: {product.id}{product.sku ? ` · SKU: ${product.sku}` : ''}</p>
                     </div>
 
                     <Button
@@ -383,7 +387,7 @@ const SeoRelTab = ({ formData, updateField }) => {
                     {/* Info del producto */}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
-                      <p className="text-xs text-gray-500">ID: {product.id}</p>
+                      <p className="text-xs text-gray-500">ID: {product.id}{product.sku ? ` · SKU: ${product.sku}` : ''}</p>
                     </div>
 
                     <Button

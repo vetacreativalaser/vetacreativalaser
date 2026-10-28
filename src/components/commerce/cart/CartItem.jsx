@@ -9,6 +9,8 @@ import { Trash2, Minus, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { formatPrice, calculateItemTotal } from '@/lib/priceUtils';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { localize } from '@/i18n/localize';
 
 /**
  * CartItem Component
@@ -20,6 +22,7 @@ import { formatPrice, calculateItemTotal } from '@/lib/priceUtils';
  */
 export default function CartItem({ item, onUpdateQuantity, onRemove }) {
   const { itemId, product, quantity, customization, selectedReason, priceConfig } = item;
+  const { language } = useLanguage();
 
   // Validar priceConfig antes de calcular
   if (!priceConfig || !priceConfig.type) {
@@ -30,8 +33,27 @@ export default function CartItem({ item, onUpdateQuantity, onRemove }) {
   // Calcular precio del item
   const itemTotal = calculateItemTotal(priceConfig, quantity, selectedReason);
 
-  // Obtener primera imagen del producto
-  const productImage = product.image_urls?.[0] || '/placeholder-product.png';
+  // Obtener primera imagen del producto (soporta formato nuevo 'images' y legacy 'image_urls')
+  const getProductImage = () => {
+    let images = product.images;
+    if (typeof images === 'string') {
+      try { images = JSON.parse(images); } catch (e) { images = null; }
+    }
+    if (images && Array.isArray(images) && images.length > 0) {
+      const first = images[0];
+      if (typeof first === 'string') return first;
+      return first.url || null;
+    }
+
+    let urls = product.image_urls;
+    if (typeof urls === 'string') {
+      try { urls = JSON.parse(urls); } catch (e) { urls = null; }
+    }
+    if (Array.isArray(urls) && urls.length > 0) return urls[0];
+
+    return null;
+  };
+  const productImage = getProductImage() || '/placeholder-product.png';
 
   // Incrementar cantidad
   const handleIncrement = () => {
@@ -71,7 +93,7 @@ export default function CartItem({ item, onUpdateQuantity, onRemove }) {
       <div className="flex-1 min-w-0">
         {/* Nombre del producto */}
         <h3 className="text-sm font-semibold text-gray-900 truncate">
-          {product.name}
+          {localize(product, 'name', language)}
         </h3>
 
         {/* Precio unitario */}
