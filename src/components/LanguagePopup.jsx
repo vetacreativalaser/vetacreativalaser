@@ -29,14 +29,14 @@ const LanguagePopup = () => {
             className="w-full"
             onClick={() => setLanguage('es')}
           >
-            🇪🇸 Castellano
+           Castellano
           </Button>
           <Button
             className="w-full"
             variant="outline"
             onClick={() => setLanguage('ca')}
           >
-            🇪🇸 Català
+            Català
           </Button>
         </div>
       </DialogContent>
